@@ -16,9 +16,19 @@ interface Status {
   defaultAddress: string | null;
 }
 
+function rateLimitMessage(res: Response, body: { error?: string } | undefined): string {
+  const retry = Number(res.headers.get("Retry-After"));
+  const minutes = Number.isFinite(retry) && retry > 0 ? Math.max(1, Math.ceil(retry / 60)) : null;
+  if (minutes) {
+    return `You've reached the scan limit for now. Please try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+  }
+  return body?.error ?? "You've reached the scan limit for now. Please try again later.";
+}
+
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const json = await res.json();
+  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  if (res.status === 429) throw new Error(rateLimitMessage(res, json));
   if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
   return json as T;
 }

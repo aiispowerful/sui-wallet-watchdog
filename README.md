@@ -93,6 +93,7 @@ npm run dev                        # http://localhost:3000
 | `OPENAI_BASE_URL`, `LLM_MODEL` | optional | e.g. `https://api.x.ai/v1`, `https://openrouter.ai/api/v1`; default model `gpt-4o-mini`. |
 | `MEMWAL_SERVER_URL` | optional | default `https://relayer.memory.walrus.xyz` |
 | `WATCH_ADDRESS` | optional | Pre-fills the UI and is the default for scripts. |
+| `RATE_LIMIT_PER_HOUR` | optional | Per-IP scan limit (default 20; `0` disables). |
 
 Each integration has an offline fallback, so you can clone the repo, run `npm install && npm test && npm run build`, and it works with **no keys**: public Sui GraphQL for dev, the SDK's `MemWalMock` for memory, and rules-only triage. The header badges always show which mode is active.
 

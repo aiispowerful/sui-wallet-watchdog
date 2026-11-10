@@ -1,3 +1,4 @@
+import { parseRateLimitPerHour } from "./rate-limit";
 /**
  * Central, server-only view of environment configuration.
  * Everything is optional so the app builds and runs (in demo mode) without keys.
@@ -15,6 +16,8 @@ export interface AppConfig {
   llmModel: string;
   allowPublicFallback: boolean;
   defaultAddress?: string;
+  /** Scans allowed per IP per hour. 0 disables the limiter. Default 20. */
+  rateLimitPerHour: number;
 }
 
 export function getConfig(env: Record<string, string | undefined> = process.env): AppConfig {
@@ -32,6 +35,7 @@ export function getConfig(env: Record<string, string | undefined> = process.env)
     llmModel: blank(env.LLM_MODEL) ?? blank(env.OPENAI_MODEL) ?? "gpt-4o-mini",
     allowPublicFallback: (blank(env.ALLOW_PUBLIC_SUI_FALLBACK) ?? "true") !== "false",
     defaultAddress: blank(env.WATCH_ADDRESS),
+    rateLimitPerHour: parseRateLimitPerHour(env.RATE_LIMIT_PER_HOUR),
   };
 }
 
