@@ -302,9 +302,6 @@ export function Dashboard() {
         </>
       )}
 
-      <footer className="px-2 pt-8 pb-2 text-center text-xs leading-relaxed text-slate-600">
-        Powered by Tatum · Walrus Memory
-      </footer>
     </div>
   );
 }
