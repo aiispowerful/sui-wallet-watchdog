@@ -61,7 +61,7 @@ export function describeMemory(m: WatchdogMemory): string {
       parts.push(`treat every "${KIND_LABEL[m.kind]}" as ${m.verdict.toUpperCase()}${m.subjectLabel ? ` when it involves ${m.subjectLabel}` : ""}`);
     }
     if (m.note) parts.push(m.note);
-    return `User preference for wallet ${wallet}: ${parts.join("; ") || "(none)"}.`;
+    return `User preference for wallet ${wallet}: ${(parts.join("; ") || "(none)").replace(/[.\s]+$/, "")}.`;
   }
   const what = m.kind ? `"${KIND_LABEL[m.kind]}"` : "activity";
   const subj = m.subjectLabel ?? (m.subject ? shortAddress(m.subject) : undefined);

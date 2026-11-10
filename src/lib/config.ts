@@ -31,7 +31,7 @@ export function getConfig(env: Record<string, string | undefined> = process.env)
     llmBaseUrl: (blank(env.OPENAI_BASE_URL) ?? blank(env.LLM_BASE_URL) ?? "https://api.openai.com/v1").replace(/\/+$/, ""),
     llmModel: blank(env.LLM_MODEL) ?? blank(env.OPENAI_MODEL) ?? "gpt-4o-mini",
     allowPublicFallback: (blank(env.ALLOW_PUBLIC_SUI_FALLBACK) ?? "true") !== "false",
-    defaultAddress: blank(env.NEXT_PUBLIC_DEFAULT_ADDRESS) ?? blank(env.WATCH_ADDRESS),
+    defaultAddress: blank(env.WATCH_ADDRESS),
   };
 }
 

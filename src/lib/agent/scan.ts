@@ -30,7 +30,7 @@ export interface ScanOptions {
   withoutMemory?: boolean;
 }
 
-const MAX_RECALL_QUERIES = 8;
+const MAX_RECALL_QUERIES = 5;
 
 /** Queries used to recall relevant memories: one broad, plus one per distinct candidate subject/kind. */
 export function recallQueries(address: string, candidates: Candidate[]): string[] {
