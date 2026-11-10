@@ -111,6 +111,13 @@ export function memoriesForPrompt(memories: RecalledMemory[]): string {
   return memories.map((m, i) => `M${i + 1}: ${memoryHeadline(m.text)}${m.parsed?.subject ? ` [subject=${m.parsed.subject}]` : ""}`).join("\n");
 }
 
+/** Bump when the demo seed profile changes so older, conflicting memories are not recalled. */
+export const DEMO_NAMESPACE_VERSION = "v2";
+const DEMO_ADDRESS = "0x" + "d3".repeat(32);
+
 export function namespaceFor(prefix: string, address: string): string {
-  return `${prefix}-${address.toLowerCase().replace(/^0x/, "").slice(0, 16)}`;
+  const normalized = address.toLowerCase();
+  const id = normalized.replace(/^0x/, "").slice(0, 16);
+  const base = `${prefix}-${id}`;
+  return normalized === DEMO_ADDRESS ? `${base}-${DEMO_NAMESPACE_VERSION}` : base;
 }

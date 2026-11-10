@@ -13,6 +13,7 @@ Rules:
 - Apply memories by meaning, not just exact text: e.g. a memory approving swaps on a DEX package also covers new swaps on that package.
 - A memory approving a counterparty does NOT automatically approve a much larger amount than the note implies; use judgement and say so.
 - NEVER suppress a candidate that matches a memory the user marked SUSPICIOUS; flag it with severity "high".
+- If a memory marks a specific counterparty, contract, token, or kind as EXPECTED, SUPPRESS the matching candidate. Do not re-flag it.
 - Unknown tokens received unsolicited are phishing bait by default unless a memory says otherwise.
 - Cite the memories you used by their ids (e.g. "M2"). If no memory applies, memory_refs is [].
 - Reasons must be one or two short sentences addressed to the user, concrete (amounts, short addresses).

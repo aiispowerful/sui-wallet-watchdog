@@ -30,7 +30,7 @@ export interface ScanOptions {
   withoutMemory?: boolean;
 }
 
-const MAX_RECALL_QUERIES = 5;
+const MAX_RECALL_QUERIES = 12;
 
 /** Queries used to recall relevant memories: one broad, plus one per distinct candidate subject/kind. */
 export function recallQueries(address: string, candidates: Candidate[]): string[] {
@@ -63,7 +63,7 @@ export async function recallMemories(memory: MemoryStore, namespace: string, add
     .slice(0, 30);
 }
 
-/** Merge LLM output with deterministic rules. Suspicious labels always win. */
+/** Merge LLM output with deterministic rules. Explicit user labels always win. */
 export function mergeDecisions(ruleResults: FlagResult[], llmRaw: unknown, memories: RecalledMemory[]): FlagResult[] {
   const parsed = DecisionSchema.parse(llmRaw);
   const byId = new Map(parsed.decisions.map((d) => [d.id, d]));
@@ -74,8 +74,11 @@ export function mergeDecisions(ruleResults: FlagResult[], llmRaw: unknown, memor
   return ruleResults.map((r) => {
     const d = byId.get(r.candidate.id);
     if (!d) return r; // model skipped it → keep deterministic decision
-    const guardSuspicious = r.decision === "flag" && r.severity === "high" && r.memoryRefs.length > 0;
+    const labelled = r.memoryRefs.length > 0;
+    const guardSuspicious = labelled && r.decision === "flag" && r.severity === "high";
     if (guardSuspicious && d.decision === "suppress") return r;
+    // An EXPECTED label (or matching threshold preference) cannot be re-flagged by the model.
+    if (labelled && r.decision === "suppress" && d.decision === "flag") return r;
     const refs = d.memory_refs.map(refToBlob).filter((x): x is string => Boolean(x));
     return {
       candidate: r.candidate,

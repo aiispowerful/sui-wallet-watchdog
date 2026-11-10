@@ -27,7 +27,7 @@ flowchart LR
     D --> R[Recall: semantic queries per candidate]
     R <--> W[(Walrus Memory<br/>relayer → SEAL-encrypted blobs on Walrus mainnet)]
     R --> L[LLM triage<br/>flag / suppress + cite memories]
-    L --> G[Guardrail: rules engine<br/>'suspicious' labels can never be suppressed]
+    L --> G[Guardrail: rules engine<br/>suspicious stays flagged; expected stays suppressed]
     G --> UI
     UI -- "✓ Expected / ⚠ Suspicious + note" --> M[POST /api/label]
     M -- remember + waitForRememberJob --> W
@@ -47,8 +47,8 @@ flowchart LR
 Each memory has a natural-language sentence (good for embeddings and semantic recall) and a machine-readable tag line (good for deterministic rules and provenance):
 
 ```
-User marked "large outflow" involving 0xe5e5…e5e5 on wallet 0xd3d3…d3d3 as EXPECTED. Note: my exchange deposit address
-[watchdog:v1] {"type":"label","address":"0xd3…","verdict":"expected","kind":"large_outflow","subject":"0xe5…","note":"my exchange deposit address","createdAt":"…"}
+User marked "large outflow" involving 0xe5e5…e5e5 on wallet 0xd3d3…d3d3 as EXPECTED. Note: This is my own cold wallet. Weekly savings transfers here are expected.
+[watchdog:v1] {"type":"label","address":"0xd3…","verdict":"expected","kind":"large_outflow","subject":"0xe5…","note":"This is my own cold wallet. Weekly savings transfers here are expected.","createdAt":"…"}
 ```
 
 Memories are scoped to one Walrus Memory **namespace per wallet** (`sui-watchdog-<first 16 hex of address>`). Notes are sanitised (single line, max 280 chars, the tag can't be spoofed), and the prompt tells the model to treat memory and transaction text as data, not instructions.
@@ -68,7 +68,7 @@ src/lib/memory/store.ts     MemWal (mainnet) / MemWalMock (offline) behind one i
 src/lib/memory/format.ts    memory text format, parsing, sanitising, namespaces
 src/lib/llm/provider.ts     provider-agnostic OpenAI-compatible client
 src/app/api/*               scan, label, preference, memories, status route handlers
-scripts/seed-memories.ts    writes a 12-memory starter security profile
+scripts/seed-memories.ts    writes the starter security profile (≥10 memories; demo adds labelled approvals)
 scripts/check-integrations.ts  live smoke test of Tatum, Walrus Memory and the LLM
 ```
 
@@ -80,7 +80,7 @@ Requirements: Node 22+.
 npm install
 cp .env.example .env.local   # then fill in the keys below
 npm run check -- 0xYOUR_ADDRESS   # live smoke test of every integration
-npm run seed  -- 0xYOUR_ADDRESS   # writes 12 starter memories to Walrus mainnet
+npm run seed  -- 0xYOUR_ADDRESS   # writes the starter profile to Walrus mainnet (≥10 memories)
 npm run dev                        # http://localhost:3000
 ```
 
@@ -102,11 +102,11 @@ Import the repo, add the env vars above to the project settings, and deploy. The
 
 ## Demo
 
-1. Open the app and keep `demo` in the box (a scripted wallet with an exchange deposit, a 250 SUI send to a stranger, a phishing airdrop, a failed mint and more), or paste a real mainnet address.
-2. **Scan.** "Without memory" and "With Walrus Memory" show the same count because nothing has been learned yet.
-3. Mark the 120 SUI exchange deposit **✓ Expected** ("my exchange deposit address") and the 250 SUI transfer to the stranger **⚠ Suspicious**. Each card shows the Walrus blob id.
-4. **Re-scan.** The deposit moves to *Suppressed by memory* with a 🧠 citation, the stranger transfer is escalated to **high**, and the before/after panel tags the change as *learned*.
-5. Mark the failed mint **✓ Expected** and re-scan: the count drops again. Standing preferences (a threshold or a note) can be added in the memory panel.
+1. Open the app and keep `demo` in the box (a scripted wallet with a 250 SUI send to a stranger, a phishing airdrop, a 120 SUI transfer to your cold wallet, a trusted NFT mint that failed once, and more), or paste a real mainnet address. Run `npm run seed -- demo` first so the demo namespace has the starter profile plus labelled approvals.
+2. **Scan.** Detectors raise 6 baseline alerts. With Walrus Memory, 3 are suppressed (the cold-wallet transfer, the trusted mint package, and the single failed mint) and 3 stay flagged (250 SUI to `0x6666…`, that new counterparty, and the `FREECLAIM` airdrop), each citing the memory used.
+3. You can still teach it live: mark another alert **✓ Expected** or **⚠ Suspicious**. Each card shows the Walrus blob id.
+4. **Re-scan.** Newly approved patterns move to *Suppressed by memory* with a 🧠 citation; patterns you mark suspicious stay flagged (and are escalated to **high**). A guardrail prevents the model from reversing those labels.
+5. Standing preferences (a threshold or a note) can be added in the memory panel.
 
 ## Scripts
 
@@ -115,7 +115,7 @@ Import the repo, add the env vars above to the project settings, and deploy. The
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm test` | Vitest: detectors, memory format, rules, full learn loop on `MemWalMock`, LLM merge and guardrail, Tatum client retry, provider fallback |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run seed -- <address\|demo> [--dry-run]` | 12-memory starter profile to Walrus Memory |
+| `npm run seed -- <address\|demo> [--dry-run]` | starter profile to Walrus Memory (≥10; demo also stores labelled approvals) |
 | `npm run check -- <address>` | live integration smoke test |
 
 ## Notes and limitations

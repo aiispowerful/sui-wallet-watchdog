@@ -1,7 +1,8 @@
 /**
  * Deterministic memory rules. Used (a) as a fallback when no LLM is configured and
  * (b) as a safety guard over the LLM: anything the user has explicitly labelled
- * SUSPICIOUS can never be suppressed by the model.
+ * SUSPICIOUS can never be suppressed by the model, and anything labelled EXPECTED
+ * cannot be re-flagged by the model.
  */
 import type { Candidate, FlagResult, RecalledMemory, Severity, WatchdogMemory } from "../types";
 

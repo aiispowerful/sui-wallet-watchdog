@@ -43,13 +43,13 @@ Walrus Memory (the `@mysten-incubation/memwal` SDK) is the agent's long-term mem
 Each memory has two parts. The first is a plain-English sentence, which embeds well. The second is a tagged JSON line, which lets a deterministic rules engine act on the memory too:
 
 ```
-User marked "large outflow" involving 0xe5e5…e5e5 on wallet 0xd3d3…d3d3 as EXPECTED. Note: my exchange deposit address
+User marked "large outflow" involving 0xe5e5…e5e5 on wallet 0xd3d3…d3d3 as EXPECTED. Note: This is my own cold wallet. Weekly savings transfers here are expected.
 [watchdog:v1] {"type":"label","verdict":"expected","kind":"large_outflow","subject":"0xe5…", ...}
 ```
 
-That rules engine does two jobs. It's the fallback when no LLM is configured, and it's a **guardrail**: once you've marked a pattern *suspicious*, the model can never suppress it, however persuasive the transaction data looks.
+That rules engine does two jobs. It's the fallback when no LLM is configured, and it's a **guardrail**: once you've marked a pattern *suspicious*, the model can never suppress it, and once you've marked one *expected*, the model cannot re-flag it.
 
-Beyond per-alert labels, a seed script writes a **12-memory starter security profile**: standing preferences such as "transfers under 5 SUI are routine", "unsolicited tokens are phishing", "a burst of transactions means a leaked key", "I swap on Cetus and DeepBook", and "any outflow above 1,000 SUI is always high severity". The LLM applies these by meaning, not by string match.
+Beyond per-alert labels, a seed script writes a **starter security profile** (at least 10 memories). Standing preferences include "transfers under 5 SUI are routine", "unsolicited tokens are phishing", "a burst of transactions means a leaked key", "I swap on Cetus and DeepBook", and "any outflow above 1,000 SUI is always high severity". The demo wallet also stores labelled approvals — my cold wallet, a trusted NFT mint package, and a single failed mint as slippage — so the first scan already shows memory at work. The LLM applies these by meaning, not by string match.
 
 ## How it learned over time
 
@@ -57,11 +57,9 @@ Here is a run on the demo wallet (replace the last row with the numbers from you
 
 | Scan | Memories recalled | Alerts without memory | Alerts with memory | What changed |
 |---|---|---|---|---|
-| 1 | 0 | 6 | 6 | Everything is new. The agent knows nothing about you yet. |
-| *(label)* | | | | 120 SUI to `0xe5…` → **Expected** ("my exchange deposit address"); 250 SUI to `0x66…` → **Suspicious** |
-| 2 | 2 | 6 | 5 | The exchange deposit is **suppressed** with a 🧠 citation; the stranger transfer is **escalated to high** with your reason attached. |
-| *(seed profile + labels)* | | | | Starter profile plus more labels: 14+ memories on Walrus mainnet |
-| 3 | 14+ | 6 | fewer, and sharper | The phishing airdrop is escalated by the "unsolicited tokens" preference; routine patterns stay quiet. |
+| 1 (seeded demo) | 15 | 6 | 3 | 120 SUI to my cold wallet, the trusted NFT mint, and the single failed mint are **suppressed** with 🧠 citations. 250 SUI to `0x66…`, that new counterparty, and the `FREECLAIM` airdrop stay flagged. |
+| *(label)* | | | | You can still teach it live: mark another pattern **Expected** or **Suspicious**; each write lands on Walrus mainnet. |
+| 2 | 15+ | 6 | 2 or 3 | New labels are applied on re-scan. Suspicious labels escalate to **high** and cannot be overridden by the model. |
 
 The baseline detectors never change. The memories are the only thing that changes the agent's behaviour. That's the point of the project: the product gets sharper the more you use it, and that knowledge lives in portable, encrypted memory on Walrus, not inside one app's database.
 

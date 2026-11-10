@@ -7,10 +7,11 @@ import type { WalletSnapshot, WalletTx } from "../types";
 export const DEMO_ADDRESS = "0x" + "d3".repeat(32);
 const ME = DEMO_ADDRESS;
 const FRIEND = "0x" + "a1".repeat(32); // "rent to flatmate"
-const EXCHANGE = "0x" + "e5".repeat(32); // CEX deposit address
+const EXCHANGE = "0x" + "e5".repeat(32); // user's own cold wallet
 const STRANGER = "0x" + "66".repeat(32); // never seen before
 const AIRDROPPER = "0x" + "bb".repeat(32);
 const CETUS = "0x" + "1e".repeat(32);
+const MINT = "0x" + "99".repeat(32); // trusted NFT mint package
 const SCAM_COIN = "0x" + "5c".repeat(32) + "::claim::FREECLAIM";
 const USDC = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
 const SUI = "0x2::sui::SUI";
@@ -43,7 +44,7 @@ export function demoSnapshot(): WalletSnapshot {
     tx(2, 2, AIRDROPPER, [[ME, SCAM_COIN, "1000000000000"]], [`${AIRDROPPER}::airdrop::spray`]),
     tx(3, 3, ME, [[ME, SUI, "-40000000000"], [ME, USDC, "33500000"]], [`${CETUS}::router::swap`]),
     tx(4, 4, ME, [[ME, SUI, "-30000000000"], [FRIEND, SUI, "30000000000"]], ["0x2::pay::split_and_transfer"]),
-    tx(5, 5, ME, [[ME, SUI, "-3000000"]], [`${"0x" + "99".repeat(32)}::mint::mint_nft`], { success: false }),
+    tx(5, 5, ME, [[ME, SUI, "-3000000"]], [`${MINT}::mint::mint_nft`], { success: false }),
     tx(6, 30, ME, [[ME, SUI, "-120000000000"], [EXCHANGE, SUI, "120000000000"]], ["0x2::pay::split_and_transfer"]),
     tx(7, 54, ME, [[ME, SUI, "-30000000000"], [FRIEND, SUI, "30000000000"]], ["0x2::pay::split_and_transfer"]),
     tx(8, 78, ME, [[ME, SUI, "-5000000000"], [ME, USDC, "4200000"]], [`${CETUS}::router::swap`]),
@@ -71,4 +72,4 @@ export function demoSnapshot(): WalletSnapshot {
   };
 }
 
-export const DEMO_PARTIES = { ME, FRIEND, EXCHANGE, STRANGER, AIRDROPPER, CETUS, SCAM_COIN, USDC };
+export const DEMO_PARTIES = { ME, FRIEND, EXCHANGE, COLD_WALLET: EXCHANGE, STRANGER, AIRDROPPER, CETUS, MINT, SCAM_COIN, USDC };

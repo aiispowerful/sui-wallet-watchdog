@@ -40,7 +40,8 @@ describe("memory format", () => {
     const p = memoriesForPrompt([recalled({ type: "preference", address: snap.address, minOutflowSui: 150 })]);
     expect(p).toMatch(/^M1: User preference .* ignore SUI outflows below 150 SUI/);
     expect(p).not.toContain(MEMORY_TAG);
-    expect(namespaceFor("sui-watchdog", snap.address)).toBe("sui-watchdog-d3d3d3d3d3d3d3d3");
+    expect(namespaceFor("sui-watchdog", snap.address)).toBe("sui-watchdog-d3d3d3d3d3d3d3d3-v2");
+    expect(namespaceFor("sui-watchdog", "0x" + "aa".repeat(32))).toBe("sui-watchdog-aaaaaaaaaaaaaaaa");
   });
 });
 

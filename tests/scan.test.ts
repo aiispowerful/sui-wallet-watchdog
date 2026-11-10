@@ -1,10 +1,13 @@
 import { MemWalMock } from "@mysten-incubation/memwal";
 import { describe, expect, it } from "vitest";
+import { detectCandidates } from "@/lib/agent/detect";
 import { rememberLabel, rememberPreference } from "@/lib/agent/learn";
-import { runScan, type ScanDeps } from "@/lib/agent/scan";
+import { recallQueries, runScan, type ScanDeps } from "@/lib/agent/scan";
 import { getConfig } from "@/lib/config";
 import type { LLMProvider } from "@/lib/llm/provider";
+import { seedProfile } from "@/lib/memory/seed-profile";
 import { MemWalStore } from "@/lib/memory/store";
+import { formatMemory, namespaceFor } from "@/lib/memory/format";
 import { DEMO_PARTIES, demoSnapshot } from "@/lib/sui/fixture";
 
 function deps(llm?: LLMProvider): ScanDeps {
@@ -89,5 +92,67 @@ describe("LLM triage", () => {
     expect(r.engine.usedLlm).toBe(false);
     expect(r.engine.llmError).toMatch(/JSON/);
     expect(r.stats.flagged).toBe(r.stats.candidates);
+  });
+});
+
+
+describe("recall coverage", () => {
+  it("issues a recall query for every demo candidate, including the mint package", () => {
+    const snap = demoSnapshot();
+    const cands = detectCandidates(snap);
+    expect(cands).toHaveLength(6);
+    const queries = recallQueries(snap.address, cands);
+    const mint = "0x" + "99".repeat(32);
+    expect(queries.some((q) => q.includes(DEMO_PARTIES.EXCHANGE))).toBe(true);
+    expect(queries.some((q) => q.includes(mint))).toBe(true);
+    expect(queries.some((q) => q.includes(DEMO_PARTIES.STRANGER))).toBe(true);
+    expect(queries.some((q) => q.includes("failed"))).toBe(true);
+  });
+});
+
+describe("demo seed memories suppress approved alerts", () => {
+  it("turns the 6 baseline alerts into 3 flags and 3 suppressions", async () => {
+    const d = deps();
+    const snap = demoSnapshot();
+    const memories = seedProfile(snap.address);
+    expect(memories.length).toBeGreaterThanOrEqual(10);
+    const ns = namespaceFor(d.cfg.memwalNamespacePrefix, snap.address);
+    for (const m of memories) {
+      await d.memory.remember(formatMemory(m), ns);
+    }
+    const r = await runScan("demo", d);
+    expect(r.stats.candidates).toBe(6);
+    expect(r.stats.flagged).toBe(3);
+    expect(r.stats.suppressed).toBe(3);
+
+    const decision = (kind: string, subject: string) =>
+      r.results.find((x) => x.candidate.kind === kind && x.candidate.subject === subject)?.decision;
+
+    expect(decision("large_outflow", DEMO_PARTIES.STRANGER)).toBe("flag");
+    expect(decision("new_counterparty", DEMO_PARTIES.STRANGER)).toBe("flag");
+    expect(decision("unknown_token_inflow", DEMO_PARTIES.SCAM_COIN)).toBe("flag");
+    expect(decision("large_outflow", DEMO_PARTIES.EXCHANGE)).toBe("suppress");
+    expect(decision("new_contract", "0x" + "99".repeat(32))).toBe("suppress");
+    expect(decision("failed_tx", "0x" + "99".repeat(32))).toBe("suppress");
+  });
+
+  it("does not let the LLM re-flag a pattern the user already approved", async () => {
+    const d = deps();
+    const before = await runScan("demo", d);
+    const cold = before.results.find((r) => r.candidate.kind === "large_outflow" && r.candidate.subject === DEMO_PARTIES.EXCHANGE)!;
+    await rememberLabel(d.memory, d.cfg.memwalNamespacePrefix, before.address, cold.candidate, "expected", "my own cold wallet");
+    d.llm = {
+      name: "fake",
+      async completeJSON() {
+        return JSON.stringify({
+          decisions: [{ id: cold.candidate.id, decision: "flag", severity: "high", reason: "large amount", memory_refs: ["M1"] }],
+          summary: "Still worried about the transfer.",
+        });
+      },
+    };
+    const after = await runScan("demo", d);
+    const again = after.results.find((r) => r.candidate.id === cold.candidate.id)!;
+    expect(again.decision).toBe("suppress");
+    expect(again.reason).toMatch(/cold wallet/i);
   });
 });
