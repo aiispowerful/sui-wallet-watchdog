@@ -1,0 +1,7 @@
+# Next.js is auto-detected; the @netlify/next runtime is applied at build time.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
