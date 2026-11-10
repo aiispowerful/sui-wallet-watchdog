@@ -92,7 +92,7 @@ npm run dev                        # http://localhost:3000
 | `OPENAI_API_KEY` | recommended | Any OpenAI-compatible key. Without it the agent runs in rules-only mode. |
 | `OPENAI_BASE_URL`, `LLM_MODEL` | optional | e.g. `https://api.x.ai/v1`, `https://openrouter.ai/api/v1`; default model `gpt-4o-mini`. |
 | `MEMWAL_SERVER_URL` | optional | default `https://relayer.memory.walrus.xyz` |
-| `WATCH_ADDRESS` | optional | Pre-fills the UI and is the default for scripts. |
+| `WATCH_ADDRESS` | optional | Default address for server scripts (`npm run seed`, `npm run check`) only. Never sent to the client or pre-filled in the UI. |
 | `RATE_LIMIT_PER_HOUR` | optional | Per-IP scan limit (default 20; `0` disables). |
 | `SESSION_SECRET` | yes (prod) | HMAC key for Sign-in-with-Sui session cookies and nonces. |
 | `AUTH_DOMAIN` | optional | Domain bound into the sign-in message (defaults to the request Host). |

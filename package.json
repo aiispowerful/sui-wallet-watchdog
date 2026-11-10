@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed": "tsx scripts/seed-memories.ts",
-    "check": "tsx scripts/check-integrations.ts"
+    "check": "tsx scripts/check-integrations.ts",
+    "test:e2e": "node scripts/e2e-landing.mjs"
   },
   "dependencies": {
     "@mysten-incubation/memwal": "^0.1.14",

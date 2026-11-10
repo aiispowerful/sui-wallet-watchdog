@@ -1,6 +1,8 @@
 "use client";
 import dynamic from "next/dynamic";
+import { useCurrentAccount, useDAppKit, useWalletConnection } from "@mysten/dapp-kit-react";
 import { useCallback, useEffect, useState } from "react";
+import { latchResume, settleResume } from "@/lib/auth/resume";
 import { labelMessageFromBody } from "@/lib/auth/messages";
 import { walletErrorMessage } from "@/lib/auth/wallet-error";
 import { KIND_LABEL } from "@/lib/memory/format";
@@ -23,7 +25,6 @@ interface Status {
   memoryConfigured: boolean;
   llm: string;
   llmConfigured: boolean;
-  defaultAddress: string | null;
 }
 
 function rateLimitMessage(res: Response, body: { error?: string } | undefined): string {
@@ -45,7 +46,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 
 export function Dashboard() {
   const [status, setStatus] = useState<Status | null>(null);
-  const [address, setAddress] = useState("demo");
+  const [address, setAddress] = useState("");
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [prev, setPrev] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,14 +54,36 @@ export function Dashboard() {
   const [labels, setLabels] = useState<Record<string, LabelOutcome>>({});
   const [memVersion, setMemVersion] = useState(0);
   const [sessionAddress, setSessionAddress] = useState<string | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [resumeChoice, setResumeChoice] = useState<"continue" | "clear" | null>(null);
   const { requestSignature } = useSignedAction();
+  const account = useCurrentAccount();
+  const connection = useWalletConnection();
+  const kit = useDAppKit();
+  const settled = settleResume({
+    sessionReady: sessionChecked,
+    connectionStatus: connection.status,
+    accountAddress: account?.address ?? null,
+    sessionAddress,
+  });
+  const [resumed, setResumed] = useState(latchResume(null, { ready: false, address: null }));
+  const nextResume = latchResume(resumed, settled);
+  if (nextResume !== resumed) {
+    setResumed(nextResume);
+  }
+  const showResumePrompt = Boolean(nextResume?.ready && nextResume.address && resumeChoice === null);
+
+  const onSession = useCallback((addr: string | null) => {
+    setSessionAddress(addr);
+    setSessionChecked(true);
+  }, []);
 
   useEffect(() => {
     fetch("/api/status")
       .then((r) => r.json())
       .then((s: Status) => {
         setStatus(s);
-        if (s.defaultAddress) setAddress(s.defaultAddress);
+        // Intentionally ignore any default/watch address — first landing must be empty.
       })
       .catch(() => undefined);
   }, []);
@@ -125,7 +148,7 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-3">
-          <WalletBar onSession={setSessionAddress} onUseAddress={setAddress} />
+          <WalletBar onSession={onSession} onUseAddress={showResumePrompt ? undefined : setAddress} />
           {status && (
             <div className="flex flex-col items-end gap-1 text-xs">
               <Badge tone={status.tatumConfigured ? "green" : "amber"}>⛓ {status.tatum}</Badge>
@@ -136,11 +159,52 @@ export function Dashboard() {
         </div>
       </header>
 
+      {showResumePrompt && nextResume?.address && (
+        <Card className="border-sky-800 bg-sky-950/40">
+          <p className="text-sm text-slate-100">
+            Continue as <span className="font-mono">{short(nextResume.address, 4)}</span>?
+          </p>
+          <p className="mt-1 text-xs text-slate-400">A previous wallet connection or sign-in was restored. Confirm before we fill the address or show results.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
+              onClick={() => {
+                if (nextResume?.address) setAddress(nextResume.address);
+                setResumeChoice("continue");
+              }}
+            >
+              Continue
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+              onClick={() => {
+                void (async () => {
+                  await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+                  await kit.disconnectWallet().catch(() => undefined);
+                  setSessionAddress(null);
+                  setSessionChecked(true);
+                  setAddress("");
+                  setScan(null);
+                  setPrev(null);
+                  setLabels({});
+                  setResumeChoice("clear");
+                })();
+              }}
+            >
+              Clear & disconnect
+            </button>
+          </div>
+        </Card>
+      )}
+
       <Card>
         <form
           className="flex flex-wrap gap-2"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!address.trim()) return;
             void runScan();
           }}
         >
@@ -150,14 +214,20 @@ export function Dashboard() {
             placeholder="0x… Sui address, or 'demo'"
             className="min-w-72 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 focus:border-sky-600 focus:outline-none"
             aria-label="Sui address"
+            autoComplete="off"
           />
-          <button type="submit" disabled={loading} className="rounded-lg bg-sky-600 px-5 py-2 font-medium text-white hover:bg-sky-500 disabled:opacity-50">
+          <button type="submit" disabled={loading || !address.trim()} className="rounded-lg bg-sky-600 px-5 py-2 font-medium text-white hover:bg-sky-500 disabled:opacity-50">
             {loading ? "Scanning…" : scan ? "Re-scan" : "Scan wallet"}
           </button>
           <button type="button" onClick={() => setAddress("demo")} className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">
             Use demo wallet
           </button>
         </form>
+        {!account && !sessionAddress && (
+          <p className="mt-3 text-xs text-slate-500">
+            Not connected with a wallet? Reloading this page will clear the address you type. Sign in to keep a session.
+          </p>
+        )}
         {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
         {isDemoWallet(address) && (
           <p className="mt-3 text-xs text-amber-300">

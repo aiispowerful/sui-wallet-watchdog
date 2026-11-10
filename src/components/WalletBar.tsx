@@ -1,14 +1,12 @@
 "use client";
-import { useCurrentAccount, useDAppKit, useWalletConnection } from "@mysten/dapp-kit-react";
-import { ConnectButton } from "@mysten/dapp-kit-react/ui";
+import { useCurrentAccount, useDAppKit } from "@mysten/dapp-kit-react";
 import { useCallback, useEffect, useState } from "react";
 import { walletErrorMessage } from "@/lib/auth/wallet-error";
-import { dAppKit } from "@/lib/sui/dapp-kit";
+import { ConnectWalletButton } from "./ConnectWalletButton";
 import { short } from "./ui";
 
 export function WalletBar({ onSession, onUseAddress }: { onSession?: (address: string | null) => void; onUseAddress?: (address: string) => void }) {
   const account = useCurrentAccount();
-  const { status } = useWalletConnection();
   const kit = useDAppKit();
   const [session, setSession] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,7 +30,12 @@ export function WalletBar({ onSession, onUseAddress }: { onSession?: (address: s
         setSession(addr);
         onSession?.(addr);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) {
+          setSession(null);
+          onSession?.(null);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -83,8 +86,7 @@ export function WalletBar({ onSession, onUseAddress }: { onSession?: (address: s
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {status === "reconnecting" && <span className="text-xs text-slate-500">Reconnecting wallet…</span>}
-        <ConnectButton instance={dAppKit} />
+        <ConnectWalletButton />
         {account && session === account.address && (
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-800">
             Signed in {short(session, 4)}

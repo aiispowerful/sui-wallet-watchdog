@@ -25,6 +25,6 @@ export function integrationStatus() {
     memoryConfigured: hasMemWal(cfg),
     llm: cfg.llmApiKey ? `${cfg.llmModel} @ ${new URL(cfg.llmBaseUrl).host}` : "rules-only (set OPENAI_API_KEY)",
     llmConfigured: Boolean(cfg.llmApiKey),
-    defaultAddress: cfg.defaultAddress ?? null,
+    // WATCH_ADDRESS is server/scripts-only and must not be sent to the client.
   };
 }

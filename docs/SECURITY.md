@@ -32,3 +32,9 @@ The demo wallet `0xd3d3…d3d3` (or the `demo` alias) is a sample. Label and pre
 ## Cookie and CSRF
 
 The session cookie is httpOnly (not readable by JavaScript), `Secure` on HTTPS, and `SameSite=Lax` (not sent on cross-site POSTs). Action endpoints also require a fresh wallet signature, which a cross-site attacker cannot produce.
+
+## First load and address privacy
+
+The landing form never pre-fills a wallet address. `WATCH_ADDRESS` is not included in `/api/status`. A typed address is not written to `localStorage`, `sessionStorage`, or the URL, so a reload clears it unless the user is connected or signed in.
+
+If autoconnect or a session cookie restores an address, the UI asks **Continue as 0x…?** before filling the field or showing results. **Clear & disconnect** signs out, disconnects the wallet, and clears the form.

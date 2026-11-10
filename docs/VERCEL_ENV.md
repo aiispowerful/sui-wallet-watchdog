@@ -14,7 +14,7 @@ Set these in the Vercel project settings (Environment Variables). Names only —
 
 ## Optional
 
-- `WATCH_ADDRESS`
+- `WATCH_ADDRESS` (scripts only; never pre-fills the UI)
 - `RATE_LIMIT_PER_HOUR`
 - `TATUM_SUI_GRAPHQL_URL`
 - `TATUM_DATA_URL`
