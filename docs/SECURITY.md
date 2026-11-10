@@ -38,3 +38,11 @@ The session cookie is httpOnly (not readable by JavaScript), `Secure` on HTTPS, 
 The landing form never pre-fills a wallet address. `WATCH_ADDRESS` is not included in `/api/status`. A typed address is not written to `localStorage`, `sessionStorage`, or the URL, so a reload clears it unless the user is connected or signed in.
 
 If autoconnect or a session cookie restores an address, the UI asks **Continue as 0x…?** before filling the field or showing results. **Clear & disconnect** signs out, disconnects the wallet, and clears the form.
+
+## Mobile and the Slush app
+
+On a phone browser there is no wallet-standard extension, so choosing a generic "Slush" row would only start the Slush *web* wallet (a `my.slush.app` popup), not the installed app.
+
+When we detect a mobile browser with no injected wallet, the picker shows a primary **Open in Slush app** link. That is the official universal link `https://my.slush.app/browse/<dapp-url>` ([Slush deep linking docs](https://sdk.mystenlabs.com/slush-wallet/deep-linking)), which opens this site in Slush's in-app browser when the app is installed. A **Get Slush** link points at the official App Store or Play Store listing. The web-wallet option stays available, labeled **Slush web wallet (sign in with Google/passkey)**.
+
+Inside Slush's in-app browser the wallet is injected via Wallet Standard, so the picker lists it and `signPersonalMessage` uses that provider. The Slush web-wallet metadata is served from `/slush-wallet-metadata.json` because `https://api.slush.app/api/wallet/metadata` is CORS-blocked from this origin.

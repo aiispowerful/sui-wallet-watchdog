@@ -1,14 +1,30 @@
 "use client";
 
+import { getWalletUniqueIdentifier } from "@mysten/dapp-kit-core";
 import { useCurrentAccount, useDAppKit, useWalletConnection, useWallets } from "@mysten/dapp-kit-react";
+import type { UiWallet } from "@mysten/dapp-kit-core";
 import { useEffect, useId, useMemo, useState } from "react";
 import { walletErrorMessage } from "@/lib/auth/wallet-error";
+import {
+  isSlushWebWallet,
+  shouldOfferSlushAppDeepLink,
+  slushAppBrowseLink,
+  slushGetAppLink,
+  slushWebWalletLabel,
+} from "@/lib/wallet/slush";
 import { short } from "./ui";
 
-const SLUSH_INSTALL = "https://slush.app";
+function walletRef(wallet: UiWallet): { id: string; name: string } {
+  return { id: getWalletUniqueIdentifier(wallet), name: wallet.name };
+}
 
-function walletKey(wallet: { name: string; id?: string }): string {
-  return wallet.id ?? wallet.name;
+function walletKey(wallet: UiWallet): string {
+  return walletRef(wallet).id;
+}
+
+function walletLabel(wallet: UiWallet): string {
+  const ref = walletRef(wallet);
+  return isSlushWebWallet(ref) ? slushWebWalletLabel() : ref.name;
 }
 
 export function ConnectWalletButton() {
@@ -20,16 +36,23 @@ export function ConnectWalletButton() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const titleId = useId();
+  // This button is loaded with ssr:false, so window is available on first render.
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  const userAgent = typeof window !== "undefined" ? navigator.userAgent : "";
 
   const sorted = useMemo(() => {
     return [...wallets].sort((a, b) => {
-      const as = a.name.toLowerCase() === "slush" ? 0 : 1;
-      const bs = b.name.toLowerCase() === "slush" ? 0 : 1;
-      return as - bs || a.name.localeCompare(b.name);
+      const ar = walletRef(a);
+      const br = walletRef(b);
+      const as = isSlushWebWallet(ar) ? 1 : ar.name.toLowerCase() === "slush" ? 0 : 2;
+      const bs = isSlushWebWallet(br) ? 1 : br.name.toLowerCase() === "slush" ? 0 : 2;
+      return as - bs || ar.name.localeCompare(br.name);
     });
   }, [wallets]);
 
-  const hasSlush = sorted.some((w) => w.name.toLowerCase() === "slush");
+  const showAppLink = shouldOfferSlushAppDeepLink(userAgent, wallets.map(walletRef));
+  const deepLink = pageUrl ? slushAppBrowseLink(pageUrl) : "";
+  const getSlushHref = userAgent ? slushGetAppLink(userAgent) : "https://slush.app/download";
 
   useEffect(() => {
     if (!open) return;
@@ -101,7 +124,7 @@ export function ConnectWalletButton() {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <h2 id={titleId} className="text-lg font-semibold text-slate-50">
-                {sorted.length > 0 ? "Connect a wallet" : "No wallets installed"}
+                {showAppLink || sorted.length > 0 ? "Connect a wallet" : "No wallets installed"}
               </h2>
               <button
                 type="button"
@@ -112,9 +135,30 @@ export function ConnectWalletButton() {
                 ✕
               </button>
             </div>
-            {sorted.length === 0 ? (
-              <p className="text-sm text-slate-300">Install a wallet to get started on Sui. Slush works as a browser extension or a web wallet.</p>
-            ) : (
+
+            {showAppLink && deepLink && (
+              <div className="mb-4 space-y-2">
+                <p className="text-sm text-slate-300">On a phone, the installed Slush app can open this site in its in-app browser, where the wallet is available to connect and sign.</p>
+                <a
+                  href={deepLink}
+                  className="flex w-full items-center justify-center rounded-xl bg-sky-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-sky-500"
+                >
+                  Open in Slush app
+                </a>
+                <a
+                  href={getSlushHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex w-full items-center justify-center rounded-xl border border-slate-600 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+                >
+                  Get Slush
+                </a>
+              </div>
+            )}
+
+            {sorted.length === 0 && !showAppLink ? (
+              <p className="text-sm text-slate-300">Install a wallet to get started on Sui. Slush works as a browser extension, a mobile app, or a web wallet.</p>
+            ) : sorted.length > 0 ? (
               <ul className="space-y-2">
                 {sorted.map((wallet) => (
                   <li key={walletKey(wallet)}>
@@ -130,25 +174,23 @@ export function ConnectWalletButton() {
                       ) : (
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-600 text-xs">⬡</span>
                       )}
-                      <span className="flex-1 font-medium">{wallet.name}</span>
+                      <span className="flex-1 font-medium">{walletLabel(wallet)}</span>
                       {busy === walletKey(wallet) ? <span className="text-xs text-slate-400">Check your wallet…</span> : null}
                     </button>
                   </li>
                 ))}
               </ul>
-            )}
-            {!hasSlush && (
+            ) : null}
+
+            {!showAppLink && (
               <a
-                href={SLUSH_INSTALL}
+                href={getSlushHref}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex text-sm text-sky-400 underline-offset-2 hover:underline"
               >
-                Install Slush
+                Get Slush
               </a>
-            )}
-            {hasSlush && (
-              <p className="mt-3 text-xs text-slate-500">Slush is listed above (extension or Slush web wallet).</p>
             )}
             {error && <p className="mt-3 text-xs text-rose-400">{error}</p>}
           </div>

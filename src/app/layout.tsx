@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sui Wallet Watchdog — an agent that remembers",
+  applicationName: "Sui Wallet Watchdog",
   description: "AI watchdog for Sui wallets. Tatum RPC for onchain data, Walrus Memory for what it learns from you.",
 };
 
