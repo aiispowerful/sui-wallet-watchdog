@@ -130,6 +130,16 @@ export function Dashboard() {
             <Stat label="Learned from" value={`${scan.memoriesUsed.length} memories`} hint={short(scan.engine.memory.split(":").slice(1).join(":"), 14)} tone="text-violet-300" />
           </div>
 
+          {(scan.engine.memory.includes("recall failed") || scan.engine.llmError) && (
+            <Card className="border-amber-900 bg-amber-950/30">
+              <p className="text-sm text-amber-200">
+                ⚠ Degraded mode: {scan.engine.memory.includes("recall failed") ? "memory recall failed, so results show the no-memory baseline. " : ""}
+                {scan.engine.llmError ? "The LLM call failed, so the rules engine decided. " : ""}
+                <span className="text-amber-400/80">{scan.engine.llmError ?? scan.engine.memory}</span>
+              </p>
+            </Card>
+          )}
+
           {scan.summary && (
             <Card className="border-sky-900 bg-sky-950/30">
               <p className="text-sm text-sky-200">🤖 {scan.summary}</p>
