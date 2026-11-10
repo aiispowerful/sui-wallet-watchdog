@@ -69,14 +69,14 @@ export function ConnectWalletButton() {
 
   if (account) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200 ring-1 ring-slate-600">
+      <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <span className="inline-flex items-center justify-center rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200 ring-1 ring-slate-600 sm:justify-start">
           Connected {short(account.address, 4)}
         </span>
         <button
           type="button"
           onClick={() => void kit.disconnectWallet().catch(() => undefined)}
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
+          className="w-full rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 sm:w-auto sm:py-1.5"
         >
           Disconnect
         </button>
@@ -105,13 +105,13 @@ export function ConnectWalletButton() {
           setError(null);
           setOpen(true);
         }}
-        className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-white"
+        className="w-full rounded-lg bg-slate-100 px-3 py-2.5 text-sm font-medium text-slate-900 hover:bg-white sm:w-auto sm:py-1.5"
       >
         Connect Wallet
       </button>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
           role="presentation"
           onClick={() => setOpen(false)}
         >
@@ -119,7 +119,7 @@ export function ConnectWalletButton() {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+            className="max-h-[min(36rem,calc(100dvh-2rem))] w-full max-w-sm min-w-0 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-2xl sm:p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -174,7 +174,7 @@ export function ConnectWalletButton() {
                       ) : (
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-600 text-xs">⬡</span>
                       )}
-                      <span className="flex-1 font-medium">{walletLabel(wallet)}</span>
+                      <span className="min-w-0 flex-1 break-words font-medium">{walletLabel(wallet)}</span>
                       {busy === walletKey(wallet) ? <span className="text-xs text-slate-400">Check your wallet…</span> : null}
                     </button>
                   </li>

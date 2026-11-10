@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AddressSchema, isDemoWallet, jsonError, scopeAddress } from "@/lib/api";
+import { AddressSchema, jsonError, scopeAddress } from "@/lib/api";
 import { requireSession } from "@/lib/auth/http";
 import { getSessionSecret } from "@/lib/auth/secret";
 import { memoryHeadline, namespaceFor } from "@/lib/memory/format";
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { address, query } = Body.parse(await req.json());
     const { memory, cfg } = getDeps();
     const addr = scopeAddress(address);
-    if (!isDemoWallet(address)) requireSession(req, addr, getSessionSecret());
+    requireSession(req, addr, getSessionSecret());
     const namespace = namespaceFor(cfg.memwalNamespacePrefix, addr);
     const items = await memory.recall(query?.trim() || `wallet ${addr} user labels and preferences`, namespace, 50);
     return Response.json({

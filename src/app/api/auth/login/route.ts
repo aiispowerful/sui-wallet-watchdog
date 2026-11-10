@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AddressSchema, isDemoWallet, jsonError, scopeAddress } from "@/lib/api";
+import { AddressSchema, jsonError, scopeAddress } from "@/lib/api";
 import { cookieSecureFlag, requestDomain, serializeSessionCookie } from "@/lib/auth/cookies";
 import { AuthError } from "@/lib/auth/errors";
 import { buildLoginMessage } from "@/lib/auth/messages";
@@ -19,9 +19,6 @@ const Body = z.object({
 export async function POST(req: Request) {
   try {
     const body = Body.parse(await req.json());
-    if (isDemoWallet(body.address)) {
-      throw new AuthError("The demo wallet does not need a sign-in.", 400, "demo");
-    }
     const address = scopeAddress(body.address);
     const secret = getSessionSecret();
     const domain = requestDomain(req);

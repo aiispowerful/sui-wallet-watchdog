@@ -84,11 +84,11 @@ export function WalletBar({ onSession, onUseAddress }: { onSession?: (address: s
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex w-full flex-col items-stretch gap-1 sm:items-end">
+      <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
         <ConnectWalletButton />
         {account && session === account.address && (
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-800">
+          <span className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-800 sm:justify-start">
             Signed in {short(session, 4)}
             {onUseAddress && (
               <button type="button" className="text-emerald-200 underline-offset-2 hover:underline" onClick={() => onUseAddress(session)}>
@@ -102,18 +102,18 @@ export function WalletBar({ onSession, onUseAddress }: { onSession?: (address: s
             type="button"
             disabled={busy}
             onClick={() => void signIn()}
-            className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+            className="w-full rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50 sm:w-auto sm:py-1.5"
           >
             {busy ? "Check your wallet…" : "Sign in with Sui"}
           </button>
         )}
         {session && (
-          <button type="button" disabled={busy} onClick={() => void signOut()} className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">
+          <button type="button" disabled={busy} onClick={() => void signOut()} className="w-full rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 sm:w-auto sm:py-1.5">
             Sign out
           </button>
         )}
       </div>
-      {error && <p className="max-w-sm text-right text-xs text-rose-400">{error}</p>}
+      {error && <p className="max-w-full break-words text-left text-xs text-rose-400 sm:max-w-sm sm:text-right">{error}</p>}
     </div>
   );
 }

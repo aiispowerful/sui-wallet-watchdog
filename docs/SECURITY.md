@@ -6,7 +6,7 @@
 
 ## What is not
 
-Writing labels (`/api/label`) or preferences (`/api/preference`) for a **real** address, and reading `/api/memories` for a real address, require proof of ownership:
+Writing labels (`/api/label`) or preferences (`/api/preference`), and reading `/api/memories`, require proof of ownership of that address:
 
 1. **Session.** Sign in with Sui: the server issues a nonce, the wallet signs a personal message (`signPersonalMessage`, no gas) that includes the site domain, address, nonce, issued-at and expiry. The server verifies the signature with `@mysten/sui`'s `verifyPersonalMessageSignature` (Ed25519, and also zkLogin / multisig / passkey / secp schemes that helper supports). A successful sign-in sets an httpOnly, `Secure`, `SameSite=Lax` session cookie: a stateless HMAC-signed token (`SESSION_SECRET`) bound to that address, valid for about 12 hours. Sign-out clears the cookie.
 2. **Per-action approval.** Each label (expected or suspicious) and each preference write requires a *new* personal-message signature over a human-readable sentence built from the request body (kind, subject, tx digest, verdict, note, nonce, expiry). The server rebuilds that sentence, requires an exact match with the signed text, and checks that the signature address equals the session address equals the body address. Only then does it write to Walrus Memory. The signature is stored on the memory as `proof` so judges can see the authorization artifact.
@@ -24,10 +24,6 @@ If you scan a real address without a session for that address, memory still infl
 - `memoriesUsed` is emptied (`memoryRedacted: true`, `memoriesUsedCount` keeps the count)
 - note text is stripped from reasons and the LLM summary
 - blob id refs on each result are left in place so the UI can show "suppressed by memory" without showing what the owner wrote
-
-## Demo fixture
-
-The demo wallet `0xd3d3…d3d3` (or the `demo` alias) is a sample. Label and preference writes are allowed **without** a signature, go only to the versioned demo namespace, and are prefixed `DEMO (unsigned sample)` in the stored text. A real address never falls through to that path.
 
 ## Cookie and CSRF
 

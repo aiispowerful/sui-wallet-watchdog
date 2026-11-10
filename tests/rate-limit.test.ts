@@ -12,7 +12,7 @@ import { getConfig } from "@/lib/config";
 
 vi.mock("@/lib/server", () => ({ getDeps: () => ({}) }));
 vi.mock("@/lib/agent/scan", () => ({
-  runScan: vi.fn(async () => ({ address: "demo", results: [], stats: { candidates: 0, flagged: 0, suppressed: 0 } })),
+  runScan: vi.fn(async () => ({ address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", results: [], memoriesUsed: [], stats: { candidates: 0, flagged: 0, suppressed: 0 } })),
 }));
 
 describe("parseRateLimitPerHour", () => {
@@ -159,7 +159,7 @@ describe("scan route uses the limiter", () => {
 
   it("returns 429 on the second scan from the same IP", async () => {
     const { POST } = await import("@/app/api/scan/route");
-    const body = JSON.stringify({ address: "demo" });
+    const body = JSON.stringify({ address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" });
     const headers = { "content-type": "application/json", "x-real-ip": "198.51.100.4" };
     const first = await POST(new Request("http://localhost/api/scan", { method: "POST", headers, body }));
     expect(first.status).toBe(200);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AddressSchema, isDemoWallet, jsonError, scopeAddress } from "@/lib/api";
+import { AddressSchema, jsonError, scopeAddress } from "@/lib/api";
 import { requestDomain } from "@/lib/auth/cookies";
 import { requireSession } from "@/lib/auth/http";
 import { buildLoginMessage } from "@/lib/auth/messages";
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const secret = getSessionSecret();
     const domain = requestDomain(req);
     if (body.purpose === "login") {
-      const address = body.address && !isDemoWallet(body.address) ? scopeAddress(body.address) : undefined;
+      const address = body.address ? scopeAddress(body.address) : undefined;
       const issued = issueNonce(secret, { purpose: "login", address, domain });
       const message = address
         ? buildLoginMessage({ domain, address, nonce: issued.nonce, issuedAt: issued.issuedAt, expiresAt: issued.expiresAt })

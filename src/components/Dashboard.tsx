@@ -1,13 +1,13 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useCurrentAccount, useDAppKit, useWalletConnection } from "@mysten/dapp-kit-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { latchResume, settleResume } from "@/lib/auth/resume";
 import { labelMessageFromBody } from "@/lib/auth/messages";
 import { walletErrorMessage } from "@/lib/auth/wallet-error";
 import { KIND_LABEL } from "@/lib/memory/format";
 import type { FlagResult, ScanResult, Verdict } from "@/lib/types";
-import { isDemoWallet, scopeAddress } from "@/lib/wallet-id";
+import { normalizeAddress } from "@/lib/sui/normalize";
 import { FlagCard, type LabelOutcome } from "./FlagCard";
 import { MemoryPanel } from "./MemoryPanel";
 import { useSignedAction } from "./useSignedAction";
@@ -17,15 +17,6 @@ const WalletBar = dynamic(() => import("./WalletBar").then((m) => m.WalletBar), 
   ssr: false,
   loading: () => <span className="text-xs text-slate-500">Loading wallet…</span>,
 });
-
-interface Status {
-  tatum: string;
-  tatumConfigured: boolean;
-  memory: string;
-  memoryConfigured: boolean;
-  llm: string;
-  llmConfigured: boolean;
-}
 
 function rateLimitMessage(res: Response, body: { error?: string } | undefined): string {
   const retry = Number(res.headers.get("Retry-After"));
@@ -45,7 +36,6 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 }
 
 export function Dashboard() {
-  const [status, setStatus] = useState<Status | null>(null);
   const [address, setAddress] = useState("");
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [prev, setPrev] = useState<ScanResult | null>(null);
@@ -78,16 +68,6 @@ export function Dashboard() {
     setSessionChecked(true);
   }, []);
 
-  useEffect(() => {
-    fetch("/api/status")
-      .then((r) => r.json())
-      .then((s: Status) => {
-        setStatus(s);
-        // Intentionally ignore any default/watch address — first landing must be empty.
-      })
-      .catch(() => undefined);
-  }, []);
-
   const runScan = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -106,17 +86,14 @@ export function Dashboard() {
   const onLabel = useCallback(
     async (r: FlagResult, verdict: Verdict, note: string) => {
       try {
-        let proof: Record<string, string> | undefined;
-        if (!isDemoWallet(address)) {
-          const scoped = scopeAddress(address);
-          proof = await requestSignature({
-            purpose: "label",
-            address: scoped,
-            buildMessage: (nonce, expiresAt) =>
-              labelMessageFromBody(scoped, r.candidate, verdict, note || undefined, nonce, expiresAt),
-          });
-        }
-        const res = await post<{ blobId?: string; status: string; store: string; demo?: boolean }>("/api/label", {
+        const scoped = normalizeAddress(address);
+        const proof = await requestSignature({
+          purpose: "label",
+          address: scoped,
+          buildMessage: (nonce, expiresAt) =>
+            labelMessageFromBody(scoped, r.candidate, verdict, note || undefined, nonce, expiresAt),
+        });
+        const res = await post<{ blobId?: string; status: string; store: string }>("/api/label", {
           address,
           candidate: r.candidate,
           verdict,
@@ -138,24 +115,17 @@ export function Dashboard() {
   const newlySuppressed = suppressed.filter((r) => prevFlagged.has(r.candidate.id));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-50">🐕 Sui Wallet Watchdog</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-400">
+    <div className="mx-auto w-full max-w-6xl space-y-6 overflow-x-hidden px-4 py-6 sm:py-8">
+      <header className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">🐕 Sui Wallet Watchdog</h1>
+          <p className="mt-1 text-sm text-slate-400 sm:max-w-2xl">
             An AI agent that watches a Sui wallet through <b>Tatum</b>, flags unusual activity, and <b>remembers your answers on Walrus Memory</b> — so it
             stops crying wolf about things you already approved.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-3">
+        <div className="w-full min-w-0 sm:w-auto sm:shrink-0">
           <WalletBar onSession={onSession} onUseAddress={showResumePrompt ? undefined : setAddress} />
-          {status && (
-            <div className="flex flex-col items-end gap-1 text-xs">
-              <Badge tone={status.tatumConfigured ? "green" : "amber"}>⛓ {status.tatum}</Badge>
-              <Badge tone={status.memoryConfigured ? "violet" : "amber"}>🧠 {status.memory}</Badge>
-              <Badge tone={status.llmConfigured ? "sky" : "amber"}>🤖 {status.llm}</Badge>
-            </div>
-          )}
         </div>
       </header>
 
@@ -165,10 +135,10 @@ export function Dashboard() {
             Continue as <span className="font-mono">{short(nextResume.address, 4)}</span>?
           </p>
           <p className="mt-1 text-xs text-slate-400">A previous wallet connection or sign-in was restored. Confirm before we fill the address or show results.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               type="button"
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
+              className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 sm:w-auto"
               onClick={() => {
                 if (nextResume?.address) setAddress(nextResume.address);
                 setResumeChoice("continue");
@@ -178,7 +148,7 @@ export function Dashboard() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+              className="w-full rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 sm:w-auto"
               onClick={() => {
                 void (async () => {
                   await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
@@ -201,7 +171,7 @@ export function Dashboard() {
 
       <Card>
         <form
-          className="flex flex-wrap gap-2"
+          className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
             e.preventDefault();
             if (!address.trim()) return;
@@ -211,16 +181,13 @@ export function Dashboard() {
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="0x… Sui address, or 'demo'"
-            className="min-w-72 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 focus:border-sky-600 focus:outline-none"
+            placeholder="0x… Sui address"
+            className="w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 focus:border-sky-600 focus:outline-none sm:flex-1"
             aria-label="Sui address"
             autoComplete="off"
           />
-          <button type="submit" disabled={loading || !address.trim()} className="rounded-lg bg-sky-600 px-5 py-2 font-medium text-white hover:bg-sky-500 disabled:opacity-50">
+          <button type="submit" disabled={loading || !address.trim()} className="w-full shrink-0 rounded-lg bg-sky-600 px-5 py-2.5 font-medium text-white hover:bg-sky-500 disabled:opacity-50 sm:w-auto sm:py-2">
             {loading ? "Scanning…" : scan ? "Re-scan" : "Scan wallet"}
-          </button>
-          <button type="button" onClick={() => setAddress("demo")} className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">
-            Use demo wallet
           </button>
         </form>
         {!account && !sessionAddress && (
@@ -229,11 +196,6 @@ export function Dashboard() {
           </p>
         )}
         {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
-        {isDemoWallet(address) && (
-          <p className="mt-3 text-xs text-amber-300">
-            Demo wallet: labels can be saved without a signature and stay in the demo namespace only. Real addresses always require a wallet sign-in and a fresh approval signature.
-          </p>
-        )}
       </Card>
 
       {scan && (
@@ -260,7 +222,6 @@ export function Dashboard() {
               <p className="text-sm text-amber-200">
                 ⚠ Degraded mode: {scan.engine.memory.includes("recall failed") ? "memory recall failed, so results show the no-memory baseline. " : ""}
                 {scan.engine.llmError ? "The LLM call failed, so the rules engine decided. " : ""}
-                <span className="text-amber-400/80">{scan.engine.llmError ?? scan.engine.memory}</span>
               </p>
             </Card>
           )}
@@ -281,13 +242,13 @@ export function Dashboard() {
             </p>
             <div className="grid gap-2 text-sm">
               {scan.results.map((r) => (
-                <div key={r.candidate.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg bg-slate-950/50 px-3 py-2">
-                  <span className="truncate text-slate-300">
+                <div key={r.candidate.id} className="grid grid-cols-1 items-start gap-1 rounded-lg bg-slate-950/50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:gap-3">
+                  <span className="min-w-0 break-words text-slate-300 sm:truncate">
                     ⚠ {KIND_LABEL[r.candidate.kind]} {r.candidate.subjectLabel ? `· ${r.candidate.subjectLabel}` : ""}
                     {r.candidate.amount !== undefined ? ` · ${r.candidate.amount} ${r.candidate.symbol ?? ""}` : ""}
                   </span>
-                  <span className="text-slate-600">→</span>
-                  <span className={r.decision === "flag" ? "text-amber-300" : "text-emerald-400 line-through decoration-emerald-700"}>
+                  <span className="hidden text-slate-600 sm:inline">→</span>
+                  <span className={`min-w-0 break-words ${r.decision === "flag" ? "text-amber-300" : "text-emerald-400 line-through decoration-emerald-700"}`}>
                     {r.decision === "flag" ? `still flagged (${r.severity})` : "suppressed"}
                     {r.memoryRefs.length > 0 && <span className="ml-2 text-xs text-violet-300 no-underline">🧠×{r.memoryRefs.length}</span>}
                     {prevFlagged.has(r.candidate.id) && r.decision === "suppress" && <Badge tone="green">learned</Badge>}
@@ -319,8 +280,8 @@ export function Dashboard() {
               <Card>
                 <h2 className="mb-2 text-lg font-semibold text-slate-100">Wallet</h2>
                 <p className="break-all font-mono text-xs text-slate-400">{scan.address}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Source: {scan.source === "tatum" ? "Tatum Sui mainnet gateway" : scan.source === "fixture" ? "demo fixture" : "public Sui GraphQL"} ·{" "}
+                <p className="mt-1 break-words text-xs text-slate-500">
+                  Source: {scan.source === "tatum" ? "Tatum Sui mainnet gateway" : scan.source === "fixture" ? "offline fixture" : "public Sui GraphQL"} ·{" "}
                   {scan.snapshot.txs.length} txs{scan.snapshot.suiUsd ? ` · SUI $${scan.snapshot.suiUsd.toFixed(3)}${scan.source === "tatum" ? " (Tatum Data API)" : ""}` : ""}
                 </p>
                 <ul className="mt-3 space-y-1 text-sm">
@@ -336,15 +297,14 @@ export function Dashboard() {
                 </ul>
               </Card>
               <MemoryPanel address={address} version={memVersion} onSaved={() => setMemVersion((v) => v + 1)} />
-              <p className="text-xs text-slate-600">
-                Engine: {scan.engine.llm}
-                {scan.engine.usedLlm ? "" : " (rules)"} · {scan.engine.memory}
-                {scan.engine.llmError ? ` · LLM error: ${scan.engine.llmError}` : ""}
-              </p>
             </div>
           </div>
         </>
       )}
+
+      <footer className="px-2 pt-8 pb-2 text-center text-xs leading-relaxed text-slate-600">
+        Powered by Tatum · Walrus Memory
+      </footer>
     </div>
   );
 }

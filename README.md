@@ -68,7 +68,7 @@ src/lib/memory/store.ts     MemWal (mainnet) / MemWalMock (offline) behind one i
 src/lib/memory/format.ts    memory text format, parsing, sanitising, namespaces
 src/lib/llm/provider.ts     provider-agnostic OpenAI-compatible client
 src/app/api/*               scan, label, preference, memories, status route handlers
-scripts/seed-memories.ts    writes the starter security profile (≥10 memories; demo adds labelled approvals)
+scripts/seed-memories.ts    writes the starter security profile (≥10 memories)
 scripts/check-integrations.ts  live smoke test of Tatum, Walrus Memory and the LLM
 ```
 
@@ -97,7 +97,7 @@ npm run dev                        # http://localhost:3000
 | `SESSION_SECRET` | yes (prod) | HMAC key for Sign-in-with-Sui session cookies and nonces. |
 | `AUTH_DOMAIN` | optional | Domain bound into the sign-in message (defaults to the request Host). |
 
-Each integration has an offline fallback, so you can clone the repo, run `npm install && npm test && npm run build`, and it works with **no keys**: public Sui GraphQL for dev, the SDK's `MemWalMock` for memory, and rules-only triage. The header badges always show which mode is active.
+Each integration has an offline fallback, so you can clone the repo, run `npm install && npm test && npm run build`, and it works with **no keys**: public Sui GraphQL for dev, the SDK's `MemWalMock` for memory, and rules-only triage.
 
 
 ## Security: Sign in with Sui
@@ -105,11 +105,9 @@ Each integration has an offline fallback, so you can clone the repo, run `npm in
 Anyone can **scan** a wallet — on-chain activity is public. Teaching the agent is not:
 
 - **Sign in** with a wallet-standard wallet on Sui mainnet (Slush and others via `@mysten/dapp-kit-react`). The server issues a short-lived HMAC-signed nonce; you sign a personal message (no gas) covering the domain, address, nonce, issued-at and expiry. A successful verify sets an httpOnly, Secure, SameSite=Lax session cookie (~12 hours) bound to that address.
-- **Every label and preference write** on a real address needs a *fresh* wallet signature over a human-readable approval (kind, subject, tx digest, verdict, note, nonce, expiry). The server checks that the signature address, the session, and the request body all match, and that the signed text is exactly the message rebuilt from the body.
-- **Memory reads** (`/api/memories`) for a real address require a session for that address.
+- **Every label and preference write** needs a *fresh* wallet signature over a human-readable approval (kind, subject, tx digest, verdict, note, nonce, expiry). The server checks that the signature address, the session, and the request body all match, and that the signed text is exactly the message rebuilt from the body.
+- **Memory reads** (`/api/memories`) require a session for that address.
 - **Unauthenticated scans** of someone else's wallet still apply stored labels (so suppression works) but **redact note text and the memory list**. Counts and flag/suppress decisions remain. See `docs/SECURITY.md`.
-- The **demo** wallet `0xd3d3…` is a fixture: it works without a wallet, and unsigned writes go only to the demo namespace and are marked `DEMO`. Real addresses never use that path.
-
 Nonces are stateless (HMAC + expiry, 5 minutes) so they work across serverless instances. There is no shared replay cache: a captured unused nonce could be replayed until it expires. Login replay only mints another session for the same address; an action replay could duplicate a memory. That's the tradeoff versus running Redis. Signatures still have to come from the wallet owner.
 
 ### Deploy to Netlify (or Vercel)
@@ -118,11 +116,13 @@ The live demo is on Netlify (`netlify.toml`, Node 22). Import the repo or run `n
 
 ## Demo
 
-1. Open the app and keep `demo` in the box (a scripted wallet with a 250 SUI send to a stranger, a phishing airdrop, a 120 SUI transfer to your cold wallet, a trusted NFT mint that failed once, and more), or paste a real mainnet address. Run `npm run seed -- demo` first so the demo namespace has the starter profile plus labelled approvals.
-2. **Scan.** Detectors raise 6 baseline alerts. With Walrus Memory, 3 are suppressed (the cold-wallet transfer, the trusted mint package, and the single failed mint) and 3 stay flagged (250 SUI to `0x6666…`, that new counterparty, and the `FREECLAIM` airdrop), each citing the memory used.
-3. You can still teach it live: mark another alert **✓ Expected** or **⚠ Suspicious**. Each card shows the Walrus blob id.
+1. Open the app. The address box starts empty. Connect a Sui wallet and **Sign in with Sui**, or paste a mainnet address. (`npm run seed -- 0xYOUR_ADDRESS` writes a starter security profile to that wallet's namespace.)
+2. **Scan.** Tatum reads balances and recent transactions. Deterministic detectors raise a no-memory baseline; Walrus Memory is recalled and applied so previously approved patterns can be suppressed.
+3. Teach it live: mark an alert **✓ Expected** or **⚠ Suspicious** (plus an optional note). Your wallet signs a personal message — no gas. Each card shows the Walrus blob id.
 4. **Re-scan.** Newly approved patterns move to *Suppressed by memory* with a 🧠 citation; patterns you mark suspicious stay flagged (and are escalated to **high**). A guardrail prevents the model from reversing those labels.
-5. Standing preferences (a threshold or a note) can be added in the memory panel.
+5. Standing preferences (a threshold or a note) can be added in the memory panel; those writes also require a fresh wallet approval.
+
+The learning loop is also covered in unit tests with a scripted fixture wallet: six baseline alerts, three suppressed after the starter profile plus labelled approvals are recalled.
 
 ## Scripts
 
@@ -131,7 +131,7 @@ The live demo is on Netlify (`netlify.toml`, Node 22). Import the repo or run `n
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm test` | Vitest: detectors, memory format, rules, full learn loop on `MemWalMock`, LLM merge and guardrail, Tatum client retry, provider fallback |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run seed -- <address\|demo> [--dry-run]` | starter profile to Walrus Memory (≥10; demo also stores labelled approvals) |
+| `npm run seed -- <address> [--dry-run]` | starter profile to Walrus Memory (≥10 memories) |
 | `npm run check -- <address>` | live integration smoke test |
 
 ## Notes and limitations

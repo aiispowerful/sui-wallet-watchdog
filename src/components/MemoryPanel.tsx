@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { buildPreferenceMessage } from "@/lib/auth/messages";
 import { walletErrorMessage } from "@/lib/auth/wallet-error";
-import { isDemoWallet, scopeAddress } from "@/lib/wallet-id";
+import { normalizeAddress } from "@/lib/sui/normalize";
 import { useSignedAction } from "./useSignedAction";
 import { Card, short } from "./ui";
 
@@ -22,7 +22,6 @@ export function MemoryPanel({ address, version, onSaved }: { address: string; ve
   const [saving, setSaving] = useState(false);
   const [locked, setLocked] = useState(false);
   const { requestSignature } = useSignedAction();
-  const demo = isDemoWallet(address);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,22 +55,20 @@ export function MemoryPanel({ address, version, onSaved }: { address: string; ve
       const body: Record<string, unknown> = { address };
       if (threshold.trim()) body.minOutflowSui = Number(threshold);
       if (note.trim()) body.note = note.trim();
-      if (!demo) {
-        const scoped = scopeAddress(address);
-        const proof = await requestSignature({
-          purpose: "preference",
-          address: scoped,
-          buildMessage: (nonce, expiresAt) =>
-            buildPreferenceMessage({
-              address: scoped,
-              minOutflowSui: threshold.trim() ? Number(threshold) : undefined,
-              note: note.trim() || undefined,
-              nonce,
-              expiresAt,
-            }),
-        });
-        Object.assign(body, proof);
-      }
+      const scoped = normalizeAddress(address);
+      const proof = await requestSignature({
+        purpose: "preference",
+        address: scoped,
+        buildMessage: (nonce, expiresAt) =>
+          buildPreferenceMessage({
+            address: scoped,
+            minOutflowSui: threshold.trim() ? Number(threshold) : undefined,
+            note: note.trim() || undefined,
+            nonce,
+            expiresAt,
+          }),
+      });
+      Object.assign(body, proof);
       const r = await fetch("/api/preference", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
@@ -90,20 +87,19 @@ export function MemoryPanel({ address, version, onSaved }: { address: string; ve
       <h2 className="text-lg font-semibold text-slate-100">🧠 What the agent remembers</h2>
       <p className="mb-3 text-xs text-slate-500">
         {store === "walrus-mainnet" ? "Encrypted on Walrus mainnet via Walrus Memory" : "Local mock memory (no MemWal key)"}
-        {demo ? " · demo namespace (unsigned writes allowed)" : ""}
       </p>
       {err && <p className="mb-2 text-xs text-rose-400">{err}</p>}
       <ul className="max-h-72 space-y-2 overflow-auto pr-1">
         {(items ?? []).map((m) => (
           <li key={m.blobId} className="rounded-lg bg-slate-950/60 p-2 text-xs text-slate-300">
-            {m.headline}
-            <div className="mt-1 text-[10px] text-slate-600">blob {short(m.blobId, 6)}</div>
+            <span className="break-words">{m.headline}</span>
+            <div className="mt-1 break-all text-[10px] text-slate-600">blob {short(m.blobId, 6)}</div>
           </li>
         ))}
         {items && items.length === 0 && !locked && <li className="text-xs text-slate-500">Nothing yet — label a flag to teach the agent.</li>}
       </ul>
       <form onSubmit={savePref} className="mt-4 space-y-2">
-        <div className="text-xs font-medium text-slate-400">Add a standing preference{demo ? " (demo)" : " — your wallet will be asked to approve"}</div>
+        <div className="text-xs font-medium text-slate-400">Add a standing preference — your wallet will be asked to approve</div>
         <input
           value={threshold}
           onChange={(e) => setThreshold(e.target.value)}
@@ -119,7 +115,7 @@ export function MemoryPanel({ address, version, onSaved }: { address: string; ve
           className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600"
         />
         <button disabled={saving} className="w-full rounded-lg bg-violet-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50">
-          {saving ? (demo ? "Writing to Walrus…" : "Check your wallet…") : "Remember this"}
+          {saving ? "Check your wallet…" : "Remember this"}
         </button>
       </form>
     </Card>

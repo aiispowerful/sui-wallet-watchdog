@@ -1,6 +1,6 @@
 /**
- * Starter memories written by `npm run seed`. The demo wallet gets extra labelled
- * approvals so a first scan already shows memory suppressing alerts the user
+ * Starter memories written by `npm run seed`. The test-fixture address also gets
+ * labelled approvals so unit tests can show memory suppressing alerts the user
  * previously approved, while genuinely new risks stay flagged.
  */
 import { DEMO_ADDRESS, DEMO_PARTIES } from "../sui/fixture";

@@ -6,9 +6,9 @@ import { isSuiAddress } from "./sui/normalize";
 export const AddressSchema = z
   .string()
   .trim()
-  .refine((v) => v.toLowerCase() === "demo" || isSuiAddress(v), "Enter a Sui address (0x…) or 'demo'");
+  .refine((v) => isSuiAddress(v), "Enter a Sui address (0x…)");
 
-export { isDemoWallet, scopeAddress } from "./wallet-id";
+export { scopeAddress } from "./wallet-id";
 
 export function jsonError(e: unknown, status = 500) {
   if (e instanceof z.ZodError) {

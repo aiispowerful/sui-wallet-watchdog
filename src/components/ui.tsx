@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Severity } from "@/lib/types";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-slate-800 bg-slate-900/60 p-5 ${className}`}>{children}</section>;
+  return <section className={`min-w-0 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:p-5 ${className}`}>{children}</section>;
 }
 
 export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: "slate" | "green" | "amber" | "red" | "sky" | "violet" }) {
@@ -24,10 +24,10 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
 
 export function Stat({ label, value, hint, tone = "text-slate-100" }: { label: string; value: ReactNode; hint?: string; tone?: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${tone}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
+    <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-3 sm:p-4">
+      <div className="text-xs uppercase tracking-wide break-words text-slate-500">{label}</div>
+      <div className={`mt-1 break-words text-xl font-semibold sm:text-2xl ${tone}`}>{value}</div>
+      {hint && <div className="mt-1 break-words text-xs text-slate-500">{hint}</div>}
     </div>
   );
 }

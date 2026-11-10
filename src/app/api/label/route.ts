@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { rememberLabel } from "@/lib/agent/learn";
-import { AddressSchema, isDemoWallet, jsonError, scopeAddress } from "@/lib/api";
+import { AddressSchema, jsonError, scopeAddress } from "@/lib/api";
 import { AuthError } from "@/lib/auth/errors";
 import { requireSession } from "@/lib/auth/http";
 import { labelMessageFromBody } from "@/lib/auth/messages";
@@ -41,11 +41,6 @@ export async function POST(req: Request) {
     const { memory, cfg } = getDeps();
     const addr = scopeAddress(body.address);
 
-    if (isDemoWallet(body.address)) {
-      const res = await rememberLabel(memory, cfg.memwalNamespacePrefix, addr, body.candidate, body.verdict, body.note, { demo: true });
-      return Response.json({ ...res, store: memory.kind, demo: true });
-    }
-
     const secret = getSessionSecret();
     requireSession(req, addr, secret);
     if (!body.nonce || !body.message || !body.signature) {
@@ -60,7 +55,7 @@ export async function POST(req: Request) {
     const res = await rememberLabel(memory, cfg.memwalNamespacePrefix, addr, body.candidate, body.verdict, body.note, {
       proof: { signature: body.signature, signedAt: new Date().toISOString() },
     });
-    return Response.json({ ...res, store: memory.kind, demo: false });
+    return Response.json({ ...res, store: memory.kind });
   } catch (e) {
     return jsonError(e);
   }

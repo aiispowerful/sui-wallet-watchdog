@@ -53,7 +53,7 @@ export function FlagCard({
           </a>
         )}
       </div>
-      <p className="mt-2 text-sm text-slate-200">{r.reason}</p>
+      <p className="mt-2 break-words text-sm text-slate-200">{r.reason}</p>
       {r.reason !== c.summary && <p className="mt-1 text-xs text-slate-500">Detector: {c.summary}</p>}
       {cited.length > 0 && (
         <ul className="mt-2 space-y-1">
@@ -70,28 +70,30 @@ export function FlagCard({
           {labelled.blobId ? ` · blob ${short(labelled.blobId, 6)}` : ` · job ${labelled.status}`}. Re-scan to see the agent apply it.
         </p>
       ) : (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional note, e.g. 'my Binance deposit address'"
-            className="min-w-56 flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:border-sky-600 focus:outline-none"
+            className="w-full min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:border-sky-600 focus:outline-none sm:min-w-56 sm:flex-1"
             maxLength={280}
           />
-          <button
-            disabled={busy !== null}
-            onClick={() => label("expected")}
-            className="rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
-          >
-            {busy === "expected" ? "Check your wallet…" : "✓ Expected"}
-          </button>
-          <button
-            disabled={busy !== null}
-            onClick={() => label("suspicious")}
-            className="rounded-lg bg-rose-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-600 disabled:opacity-50"
-          >
-            {busy === "suspicious" ? "Check your wallet…" : "⚠ Suspicious"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              disabled={busy !== null}
+              onClick={() => label("expected")}
+              className="flex-1 rounded-lg bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 sm:flex-none sm:py-1.5"
+            >
+              {busy === "expected" ? "Check your wallet…" : "✓ Expected"}
+            </button>
+            <button
+              disabled={busy !== null}
+              onClick={() => label("suspicious")}
+              className="flex-1 rounded-lg bg-rose-700 px-3 py-2 text-sm font-medium text-white hover:bg-rose-600 disabled:opacity-50 sm:flex-none sm:py-1.5"
+            >
+              {busy === "suspicious" ? "Check your wallet…" : "⚠ Suspicious"}
+            </button>
+          </div>
         </div>
       )}
       {err && <p className="mt-2 text-xs text-rose-400">{err}</p>}

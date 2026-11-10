@@ -2,7 +2,6 @@
 import type { AppConfig } from "../config";
 import { getTatumUsdRate } from "../price/tatum";
 import { SUI_COIN_TYPE, type CoinBalance, type WalletSnapshot } from "../types";
-import { demoSnapshot } from "./fixture";
 import { PUBLIC_SUI_GRAPHQL_URL, SuiGraphQLClient } from "./graphql";
 import { coinSymbolFromType, normalizeAddress, toHuman } from "./normalize";
 
@@ -11,10 +10,6 @@ const WELL_KNOWN: Record<string, { symbol: string; decimals: number }> = {
   "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC": { symbol: "USDC", decimals: 6 },
 };
 
-export function isDemoAddress(address: string): boolean {
-  return address.trim().toLowerCase() === "demo";
-}
-
 export function makeSuiClient(cfg: AppConfig): { client: SuiGraphQLClient; source: "tatum" | "sui-graphql" } {
   if (cfg.tatumApiKey) return { client: new SuiGraphQLClient(cfg.tatumGraphqlUrl, cfg.tatumApiKey), source: "tatum" };
   if (!cfg.allowPublicFallback) throw new Error("TATUM_API_KEY is not set (and ALLOW_PUBLIC_SUI_FALLBACK=false).");
@@ -22,7 +17,6 @@ export function makeSuiClient(cfg: AppConfig): { client: SuiGraphQLClient; sourc
 }
 
 export async function getWalletSnapshot(addressInput: string, cfg: AppConfig, txLimit = 25): Promise<WalletSnapshot> {
-  if (isDemoAddress(addressInput)) return demoSnapshot();
   const address = normalizeAddress(addressInput);
   const { client, source } = makeSuiClient(cfg);
 

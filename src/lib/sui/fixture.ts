@@ -1,5 +1,5 @@
 /**
- * Deterministic demo wallet used by tests and by the UI when the address "demo" is scanned.
+ * Deterministic wallet snapshot used by unit tests.
  * Mirrors the shape returned by the live Tatum client so the whole agent pipeline is exercised.
  */
 import type { WalletSnapshot, WalletTx } from "../types";

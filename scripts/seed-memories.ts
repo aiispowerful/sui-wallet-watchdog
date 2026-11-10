@@ -3,7 +3,7 @@
  * standing preferences the agent recalls on every scan (≥10 memories on mainnet).
  *
  *   npm run seed -- 0xYOUR_SUI_ADDRESS        (or set WATCH_ADDRESS)
- *   npm run seed -- demo                      (seeds the demo wallet)
+ *   npm run seed -- demo                      (seeds the test-fixture namespace)
  *   npm run seed -- 0x... --dry-run           (print without writing)
  */
 import "./env";
@@ -18,7 +18,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dry = args.includes("--dry-run");
   const input = args.find((a) => !a.startsWith("--")) ?? process.env.WATCH_ADDRESS;
-  if (!input) throw new Error("Usage: npm run seed -- <0xSuiAddress|demo> [--dry-run]");
+  if (!input) throw new Error("Usage: npm run seed -- <0xSuiAddress> [--dry-run]");
   const address = input.toLowerCase() === "demo" ? DEMO_ADDRESS : normalizeAddress(input);
 
   const cfg = getConfig();

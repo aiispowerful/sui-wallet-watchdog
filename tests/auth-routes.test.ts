@@ -134,30 +134,24 @@ describe("auth and label routes", () => {
     );
     expect(ok.status).toBe(200);
     const saved = await ok.json();
-    expect(saved.demo).toBe(false);
     expect(saved.proof?.signature).toBe(okSig);
+    expect(saved.demo).toBeUndefined();
   });
 
-  it("allows unsigned demo labels into the demo namespace only, and does not require a session to list them", async () => {
-    const res = await labelPOST(jsonReq("http://localhost/api/label", { address: "demo", candidate, verdict: "expected", note: "sample" }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.demo).toBe(true);
-    expect(body.namespace).toContain("d3d3d3d3d3d3d3d3");
-    expect(body.headline).toMatch(/DEMO/i);
+  it("rejects the old 'demo' alias and requires a session plus signature for every address, including the former fixture", async () => {
+    const alias = await labelPOST(jsonReq("http://localhost/api/label", { address: "demo", candidate, verdict: "expected", note: "sample" }));
+    expect(alias.status).toBe(400);
 
-    const list = await memoriesPOST(jsonReq("http://localhost/api/memories", { address: "demo" }));
-    expect(list.status).toBe(200);
+    const unsigned = await labelPOST(jsonReq("http://localhost/api/label", { address: DEMO_ADDRESS, candidate, verdict: "expected", note: "sample" }));
+    expect(unsigned.status).toBe(401);
+    await expect(unsigned.json()).resolves.toMatchObject({ code: "unauthenticated" });
 
-    const real = "0x" + "aa".repeat(32);
-    const blocked = await memoriesPOST(jsonReq("http://localhost/api/memories", { address: real }));
-    expect(blocked.status).toBe(401);
-  });
+    const list = await memoriesPOST(jsonReq("http://localhost/api/memories", { address: DEMO_ADDRESS }));
+    expect(list.status).toBe(401);
 
-  it("does not treat a real address as the demo path even if it looks similar", async () => {
     const almost = "0x" + "d3".repeat(31) + "d4";
-    const res = await labelPOST(jsonReq("http://localhost/api/label", { address: almost, candidate, verdict: "expected" }));
-    expect(res.status).toBe(401);
+    const similar = await labelPOST(jsonReq("http://localhost/api/label", { address: almost, candidate, verdict: "expected" }));
+    expect(similar.status).toBe(401);
     expect(almost).not.toBe(DEMO_ADDRESS);
   });
 });
