@@ -186,7 +186,7 @@ export function Dashboard() {
                 <p className="break-all font-mono text-xs text-slate-400">{scan.address}</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Source: {scan.source === "tatum" ? "Tatum Sui mainnet gateway" : scan.source === "fixture" ? "demo fixture" : "public Sui GraphQL"} ·{" "}
-                  {scan.snapshot.txs.length} txs{scan.snapshot.suiUsd ? ` · SUI $${scan.snapshot.suiUsd.toFixed(3)} (Tatum)` : ""}
+                  {scan.snapshot.txs.length} txs{scan.snapshot.suiUsd ? ` · SUI $${scan.snapshot.suiUsd.toFixed(3)}${scan.source === "tatum" ? " (Tatum Data API)" : ""}` : ""}
                 </p>
                 <ul className="mt-3 space-y-1 text-sm">
                   {scan.snapshot.balances.slice(0, 8).map((b) => (

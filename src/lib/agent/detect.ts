@@ -183,7 +183,7 @@ export function detectCandidates(snapshot: WalletSnapshot, opts: Partial<DetectO
         digest: t.digest,
         timestampMs: t.timestampMs,
         subject: packagesOf(t)[0],
-        subjectLabel: t.moveCalls[0],
+        subjectLabel: t.moveCalls[0] ? `${shortAddress(t.moveCalls[0].split("::")[0])}::${t.moveCalls[0].split("::").slice(1).join("::")}` : undefined,
         summary: `Transaction failed${t.moveCalls[0] ? ` calling ${t.moveCalls[0].split("::").slice(1).join("::")}` : ""} — possible bad approval or griefing.`,
       });
     }
