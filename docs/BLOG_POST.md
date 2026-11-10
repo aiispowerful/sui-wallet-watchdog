@@ -53,7 +53,7 @@ Beyond per-alert labels, a seed script writes a **starter security profile** (at
 
 ## How it learned over time
 
-Here is a run against the scripted test fixture that exercises the full learning loop (replace the last row with the numbers from your own recorded run):
+Here is a run against the test fixture that exercises the full learning loop (the same detectors and memory recall the live app uses):
 
 | Scan | Memories recalled | Alerts without memory | Alerts with memory | What changed |
 |---|---|---|---|---|
