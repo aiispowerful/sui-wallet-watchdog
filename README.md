@@ -104,9 +104,9 @@ Import the repo, add the env vars above to the project settings, and deploy. The
 
 1. Open the app and keep `demo` in the box (a scripted wallet with an exchange deposit, a 250 SUI send to a stranger, a phishing airdrop, a failed mint and more), or paste a real mainnet address.
 2. **Scan.** "Without memory" and "With Walrus Memory" show the same count because nothing has been learned yet.
-3. Mark the 120 SUI exchange deposit **✓ Expected** ("my exchange deposit address") and the FREECLAIM airdrop **⚠ Suspicious**. Each card shows the Walrus blob id.
-4. **Re-scan.** The deposit moves to *Suppressed by memory* with a 🧠 citation, the airdrop is escalated to **high**, and the before/after panel tags the change as *learned*.
-5. Add a standing preference ("Ignore SUI outflows below 150") and re-scan again.
+3. Mark the 120 SUI exchange deposit **✓ Expected** ("my exchange deposit address") and the 250 SUI transfer to the stranger **⚠ Suspicious**. Each card shows the Walrus blob id.
+4. **Re-scan.** The deposit moves to *Suppressed by memory* with a 🧠 citation, the stranger transfer is escalated to **high**, and the before/after panel tags the change as *learned*.
+5. Mark the failed mint **✓ Expected** and re-scan: the count drops again. Standing preferences (a threshold or a note) can be added in the memory panel.
 
 ## Scripts
 

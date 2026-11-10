@@ -53,7 +53,7 @@ Beyond per-alert labels, a seed script writes a **12-memory starter security pro
 
 ## How it learned over time
 
-Here is a real run on the demo wallet:
+Here is a run on the demo wallet (replace the last row with the numbers from your own recorded run):
 
 | Scan | Memories recalled | Alerts without memory | Alerts with memory | What changed |
 |---|---|---|---|---|
