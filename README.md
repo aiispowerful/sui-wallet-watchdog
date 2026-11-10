@@ -94,12 +94,27 @@ npm run dev                        # http://localhost:3000
 | `MEMWAL_SERVER_URL` | optional | default `https://relayer.memory.walrus.xyz` |
 | `WATCH_ADDRESS` | optional | Pre-fills the UI and is the default for scripts. |
 | `RATE_LIMIT_PER_HOUR` | optional | Per-IP scan limit (default 20; `0` disables). |
+| `SESSION_SECRET` | yes (prod) | HMAC key for Sign-in-with-Sui session cookies and nonces. |
+| `AUTH_DOMAIN` | optional | Domain bound into the sign-in message (defaults to the request Host). |
 
 Each integration has an offline fallback, so you can clone the repo, run `npm install && npm test && npm run build`, and it works with **no keys**: public Sui GraphQL for dev, the SDK's `MemWalMock` for memory, and rules-only triage. The header badges always show which mode is active.
 
-### Deploy to Vercel
 
-Import the repo, add the env vars above to the project settings, and deploy. The API routes set `maxDuration` to 60 s because Walrus writes wait for the upload job to finish.
+## Security: Sign in with Sui
+
+Anyone can **scan** a wallet — on-chain activity is public. Teaching the agent is not:
+
+- **Sign in** with a wallet-standard wallet on Sui mainnet (Slush and others via `@mysten/dapp-kit-react`). The server issues a short-lived HMAC-signed nonce; you sign a personal message (no gas) covering the domain, address, nonce, issued-at and expiry. A successful verify sets an httpOnly, Secure, SameSite=Lax session cookie (~12 hours) bound to that address.
+- **Every label and preference write** on a real address needs a *fresh* wallet signature over a human-readable approval (kind, subject, tx digest, verdict, note, nonce, expiry). The server checks that the signature address, the session, and the request body all match, and that the signed text is exactly the message rebuilt from the body.
+- **Memory reads** (`/api/memories`) for a real address require a session for that address.
+- **Unauthenticated scans** of someone else's wallet still apply stored labels (so suppression works) but **redact note text and the memory list**. Counts and flag/suppress decisions remain. See `docs/SECURITY.md`.
+- The **demo** wallet `0xd3d3…` is a fixture: it works without a wallet, and unsigned writes go only to the demo namespace and are marked `DEMO`. Real addresses never use that path.
+
+Nonces are stateless (HMAC + expiry, 5 minutes) so they work across serverless instances. There is no shared replay cache: a captured unused nonce could be replayed until it expires. Login replay only mints another session for the same address; an action replay could duplicate a memory. That's the tradeoff versus running Redis. Signatures still have to come from the wallet owner.
+
+### Deploy to Netlify (or Vercel)
+
+The live demo is on Netlify (`netlify.toml`, Node 22). Import the repo or run `netlify deploy --build --prod`, add the env vars above (including `SESSION_SECRET` as a secret), and deploy. Same env vars work on Vercel. The API routes set `maxDuration` to 60 s because Walrus writes wait for the upload job to finish.
 
 ## Demo
 

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { runScan } from "@/lib/agent/scan";
-import { AddressSchema, jsonError } from "@/lib/api";
+import { AddressSchema, isDemoWallet, jsonError, scopeAddress } from "@/lib/api";
+import { trySession } from "@/lib/auth/http";
+import { redactScanForPublic } from "@/lib/auth/redact";
 import { enforceScanRateLimit } from "@/lib/rate-limit";
 import { getDeps } from "@/lib/server";
 
@@ -14,7 +16,8 @@ export async function POST(req: Request) {
   try {
     const { address, withoutMemory } = Body.parse(await req.json());
     const result = await runScan(address, getDeps(), { withoutMemory });
-    return Response.json(result);
+    const reveal = isDemoWallet(address) || trySession(req)?.addr === scopeAddress(address);
+    return Response.json(reveal ? result : redactScanForPublic(result));
   } catch (e) {
     return jsonError(e);
   }

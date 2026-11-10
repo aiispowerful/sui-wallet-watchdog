@@ -83,14 +83,14 @@ export function FlagCard({
             onClick={() => label("expected")}
             className="rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
           >
-            {busy === "expected" ? "Saving…" : "✓ Expected"}
+            {busy === "expected" ? "Check your wallet…" : "✓ Expected"}
           </button>
           <button
             disabled={busy !== null}
             onClick={() => label("suspicious")}
             className="rounded-lg bg-rose-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-600 disabled:opacity-50"
           >
-            {busy === "suspicious" ? "Saving…" : "⚠ Suspicious"}
+            {busy === "suspicious" ? "Check your wallet…" : "⚠ Suspicious"}
           </button>
         </div>
       )}

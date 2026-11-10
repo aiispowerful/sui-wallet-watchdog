@@ -1,10 +1,20 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
+import { labelMessageFromBody } from "@/lib/auth/messages";
+import { walletErrorMessage } from "@/lib/auth/wallet-error";
 import { KIND_LABEL } from "@/lib/memory/format";
 import type { FlagResult, ScanResult, Verdict } from "@/lib/types";
+import { isDemoWallet, scopeAddress } from "@/lib/wallet-id";
 import { FlagCard, type LabelOutcome } from "./FlagCard";
 import { MemoryPanel } from "./MemoryPanel";
+import { useSignedAction } from "./useSignedAction";
 import { Badge, Card, Stat, short } from "./ui";
+
+const WalletBar = dynamic(() => import("./WalletBar").then((m) => m.WalletBar), {
+  ssr: false,
+  loading: () => <span className="text-xs text-slate-500">Loading wallet…</span>,
+});
 
 interface Status {
   tatum: string;
@@ -42,6 +52,8 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [labels, setLabels] = useState<Record<string, LabelOutcome>>({});
   const [memVersion, setMemVersion] = useState(0);
+  const [sessionAddress, setSessionAddress] = useState<string | null>(null);
+  const { requestSignature } = useSignedAction();
 
   useEffect(() => {
     fetch("/api/status")
@@ -70,16 +82,31 @@ export function Dashboard() {
 
   const onLabel = useCallback(
     async (r: FlagResult, verdict: Verdict, note: string) => {
-      const res = await post<{ blobId?: string; status: string; store: string }>("/api/label", {
-        address,
-        candidate: r.candidate,
-        verdict,
-        note: note || undefined,
-      });
-      setLabels((l) => ({ ...l, [r.candidate.id]: { verdict, ...res } }));
-      setMemVersion((v) => v + 1);
+      try {
+        let proof: Record<string, string> | undefined;
+        if (!isDemoWallet(address)) {
+          const scoped = scopeAddress(address);
+          proof = await requestSignature({
+            purpose: "label",
+            address: scoped,
+            buildMessage: (nonce, expiresAt) =>
+              labelMessageFromBody(scoped, r.candidate, verdict, note || undefined, nonce, expiresAt),
+          });
+        }
+        const res = await post<{ blobId?: string; status: string; store: string; demo?: boolean }>("/api/label", {
+          address,
+          candidate: r.candidate,
+          verdict,
+          note: note || undefined,
+          ...proof,
+        });
+        setLabels((l) => ({ ...l, [r.candidate.id]: { verdict, ...res } }));
+        setMemVersion((v) => v + 1);
+      } catch (e) {
+        throw new Error(walletErrorMessage(e));
+      }
     },
-    [address],
+    [address, requestSignature],
   );
 
   const flagged = scan?.results.filter((r) => r.decision === "flag") ?? [];
@@ -97,13 +124,16 @@ export function Dashboard() {
             stops crying wolf about things you already approved.
           </p>
         </div>
-        {status && (
-          <div className="flex flex-col items-end gap-1 text-xs">
-            <Badge tone={status.tatumConfigured ? "green" : "amber"}>⛓ {status.tatum}</Badge>
-            <Badge tone={status.memoryConfigured ? "violet" : "amber"}>🧠 {status.memory}</Badge>
-            <Badge tone={status.llmConfigured ? "sky" : "amber"}>🤖 {status.llm}</Badge>
-          </div>
-        )}
+        <div className="flex flex-col items-end gap-3">
+          <WalletBar onSession={setSessionAddress} onUseAddress={setAddress} />
+          {status && (
+            <div className="flex flex-col items-end gap-1 text-xs">
+              <Badge tone={status.tatumConfigured ? "green" : "amber"}>⛓ {status.tatum}</Badge>
+              <Badge tone={status.memoryConfigured ? "violet" : "amber"}>🧠 {status.memory}</Badge>
+              <Badge tone={status.llmConfigured ? "sky" : "amber"}>🤖 {status.llm}</Badge>
+            </div>
+          )}
+        </div>
       </header>
 
       <Card>
@@ -129,6 +159,11 @@ export function Dashboard() {
           </button>
         </form>
         {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
+        {isDemoWallet(address) && (
+          <p className="mt-3 text-xs text-amber-300">
+            Demo wallet: labels can be saved without a signature and stay in the demo namespace only. Real addresses always require a wallet sign-in and a fresh approval signature.
+          </p>
+        )}
       </Card>
 
       {scan && (
@@ -139,6 +174,16 @@ export function Dashboard() {
             <Stat label="Suppressed" value={scan.stats.suppressed} hint="matched patterns you approved" tone="text-emerald-300" />
             <Stat label="Learned from" value={`${scan.memoriesUsed.length} memories`} hint={short(scan.engine.memory.split(":").slice(1).join(":"), 14)} tone="text-violet-300" />
           </div>
+
+          {scan.memoryRedacted && (
+            <Card className="border-slate-700 bg-slate-900/40">
+              <p className="text-sm text-slate-300">
+                Memory still shapes these results (suppressed vs flagged), but note text and the memory list are hidden
+                because you are not signed in as this wallet
+                {sessionAddress ? ` (signed in as ${short(sessionAddress, 4)}).` : "."} Sign in with this address to see your notes.
+              </p>
+            </Card>
+          )}
 
           {(scan.engine.memory.includes("recall failed") || scan.engine.llmError) && (
             <Card className="border-amber-900 bg-amber-950/30">

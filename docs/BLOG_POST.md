@@ -14,8 +14,8 @@ Watchdog is an AI agent that watches a Sui mainnet wallet:
 
 1. **It reads the chain through Tatum.** Balances, the latest transactions (sent and received), coin metadata and the live SUI/USD price.
 2. **It finds anything unusual.** Deterministic detectors look for large outflows (absolute, or relative to the wallet's own median), first-time counterparties, unsolicited unknown tokens (the classic airdrop-phishing setup), calls to never-seen contracts, failed transactions, high gas and bursts of outgoing transactions.
-3. **It asks you.** Each flag has two buttons, **✓ Expected** and **⚠ Suspicious**, plus an optional note like "that's my Binance deposit address".
-4. **It remembers.** Your answer becomes a memory on **Walrus Memory**, encrypted and stored on Walrus mainnet.
+3. **It asks you.** Each flag has two buttons, **✓ Expected** and **⚠ Suspicious**, plus an optional note like "that's my Binance deposit address". On a real wallet those buttons open a wallet prompt: you sign a personal message (no gas) that names the pattern, the verdict and the note. The demo wallet stays click-to-label so judges can try it without a wallet.
+4. **It remembers.** Your answer becomes a memory on **Walrus Memory**, encrypted and stored on Walrus mainnet, with the approval signature stored alongside it.
 5. **It gets better.** On the next scan the agent recalls the relevant memories, hands them to an LLM with the new candidates, and decides what still deserves your attention. It cites the exact memories it used.
 
 The UI includes a **Before / after memory** panel. On the left is every alert a memory-less watchdog would raise. On the right is what Watchdog decided after recalling your history. Items it has newly learned to ignore get a *learned* badge, and the header shows how many memories it learned from.
@@ -65,7 +65,7 @@ The baseline detectors never change. The memories are the only thing that change
 
 ## Architecture
 
-Next.js (App Router, TypeScript) with API route handlers, deployable to Vercel:
+Next.js (App Router, TypeScript) with API route handlers, deployed to Netlify:
 
 ```
 observe (Tatum) → detect (deterministic baseline) → recall (Walrus Memory) → decide (LLM + guardrail) → learn (Walrus Memory)
@@ -73,6 +73,7 @@ observe (Tatum) → detect (deterministic baseline) → recall (Walrus Memory) �
 
 - The LLM layer is provider-agnostic: anything that speaks the OpenAI Chat Completions format works, and output is validated with zod.
 - Each integration has an offline twin (the SDK's `MemWalMock`, public Sui GraphQL, rules-only triage), so the full learning loop is covered by unit tests with no keys.
+- **Sign in with Sui** (wallet-standard wallets via `@mysten/dapp-kit-react`) issues an httpOnly session cookie after a personal-message signature. Memory writes on real addresses require a fresh approval signature; unauthenticated scans still apply memory but hide note text. Details are in `docs/SECURITY.md`.
 
 ## What's next
 
@@ -80,4 +81,4 @@ observe (Tatum) → detect (deterministic baseline) → recall (Walrus Memory) �
 - Shared "community memories" for known scam packages, kept separate from a user's private memory.
 - Tatum webhooks for real-time monitoring instead of polling.
 
-**Repo:** `<GITHUB_URL>` · **Live demo:** `<DEMO_URL>` · Built with [Tatum](https://tatum.io) and [Walrus Memory](https://memory.walrus.xyz). #TotalRecall @Tatum_io @WalrusFoundation
+**Repo:** `<GITHUB_URL>` · **Live demo:** https://sui-wallet-watchdog.netlify.app · Built with [Tatum](https://tatum.io) and [Walrus Memory](https://memory.walrus.xyz). #TotalRecall @Tatum_io @WalrusFoundation

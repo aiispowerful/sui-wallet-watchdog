@@ -63,9 +63,10 @@ export function describeMemory(m: WatchdogMemory): string {
     if (m.note) parts.push(m.note);
     return `User preference for wallet ${wallet}: ${(parts.join("; ") || "(none)").replace(/[.\s]+$/, "")}.`;
   }
+  const demo = m.demo ? "DEMO (unsigned sample): " : "";
   const what = m.kind ? `"${KIND_LABEL[m.kind]}"` : "activity";
   const subj = m.subjectLabel ?? (m.subject ? shortAddress(m.subject) : undefined);
-  return `User marked ${what}${subj ? ` involving ${subj}` : ""} on wallet ${wallet} as ${(m.verdict ?? "expected").toUpperCase()}.${m.note ? ` Note: ${m.note}` : ""}`;
+  return `${demo}User marked ${what}${subj ? ` involving ${subj}` : ""} on wallet ${wallet} as ${(m.verdict ?? "expected").toUpperCase()}.${m.note ? ` Note: ${m.note}` : ""}`;
 }
 
 export function formatMemory(m: WatchdogMemory): string {
@@ -93,6 +94,11 @@ export function parseMemory(text: string): WatchdogMemory | null {
       minOutflowSui: raw.minOutflowSui,
       note: sanitizeNote(typeof raw.note === "string" ? raw.note : undefined),
       createdAt: typeof raw.createdAt === "string" ? raw.createdAt : undefined,
+      demo: raw.demo === true ? true : undefined,
+      proof:
+        raw.proof && typeof raw.proof === "object" && typeof (raw.proof as { signature?: string }).signature === "string"
+          ? { signature: (raw.proof as { signature: string; signedAt?: string }).signature, signedAt: (raw.proof as { signedAt?: string }).signedAt ?? "" }
+          : undefined,
     };
   } catch {
     return null;

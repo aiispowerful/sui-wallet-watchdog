@@ -87,6 +87,10 @@ export interface WatchdogMemory {
   minOutflowSui?: number;
   note?: string;
   createdAt?: string;
+  /** True when the write was made on the unsigned demo fixture path. */
+  demo?: boolean;
+  /** Personal-message proof that authorised a real-wallet write. */
+  proof?: { signature: string; signedAt: string };
 }
 
 export interface RecalledMemory {
@@ -117,6 +121,9 @@ export interface ScanResult {
   baseline: Candidate[];
   results: FlagResult[];
   memoriesUsed: RecalledMemory[];
+  /** Present when memory text was withheld from an unauthenticated caller. */
+  memoryRedacted?: boolean;
+  memoriesUsedCount?: number;
   engine: { llm: string; memory: string; usedLlm: boolean; llmError?: string };
   stats: { candidates: number; flagged: number; suppressed: number; escalated: number };
   /** One-sentence LLM assessment, when an LLM is configured. */

@@ -7,6 +7,8 @@ export interface LearnResult extends StoredMemory {
   namespace: string;
   text: string;
   headline: string;
+  demo?: boolean;
+  proof?: WatchdogMemory["proof"];
 }
 
 export async function rememberLabel(
@@ -16,8 +18,9 @@ export async function rememberLabel(
   candidate: Candidate,
   verdict: Verdict,
   note?: string,
+  extra?: Pick<WatchdogMemory, "demo" | "proof">,
 ): Promise<LearnResult> {
-  const m = labelFromCandidate(address, candidate, verdict, note);
+  const m = { ...labelFromCandidate(address, candidate, verdict, note), ...extra };
   return write(memory, prefix, m);
 }
 
@@ -25,7 +28,7 @@ export async function rememberPreference(
   memory: MemoryStore,
   prefix: string,
   address: string,
-  pref: Pick<WatchdogMemory, "minOutflowSui" | "note" | "kind" | "verdict" | "subject" | "subjectLabel">,
+  pref: Pick<WatchdogMemory, "minOutflowSui" | "note" | "kind" | "verdict" | "subject" | "subjectLabel" | "demo" | "proof">,
 ): Promise<LearnResult> {
   const m: WatchdogMemory = { type: "preference", address, ...pref, note: sanitizeNote(pref.note), createdAt: new Date().toISOString() };
   return write(memory, prefix, m);
@@ -35,5 +38,5 @@ async function write(memory: MemoryStore, prefix: string, m: WatchdogMemory): Pr
   const namespace = namespaceFor(prefix, m.address);
   const text = formatMemory(m);
   const stored = await memory.remember(text, namespace, { wait: true, timeoutMs: 40_000 });
-  return { ...stored, namespace, text, headline: describeMemory(m) };
+  return { ...stored, namespace, text, headline: describeMemory(m), demo: m.demo, proof: m.proof };
 }

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "node_modules/**",
+    "coverage/**",
+    // Created by `netlify deploy --build`; not source.
+    ".netlify/**",
   ]),
 ]);
 
