@@ -81,4 +81,4 @@ observe (Tatum) → detect (deterministic baseline) → recall (Walrus Memory) �
 - Shared "community memories" for known scam packages, kept separate from a user's private memory.
 - Tatum webhooks for real-time monitoring instead of polling.
 
-**Repo:** `<GITHUB_URL>` · **Live demo:** https://sui-wallet-watchdog.netlify.app · Built with [Tatum](https://tatum.io) and [Walrus Memory](https://memory.walrus.xyz). #TotalRecall @Tatum_io @WalrusFoundation
+**Repo:** https://github.com/aiispowerful/sui-wallet-watchdog · **Live demo:** https://sui-wallet-watchdog.netlify.app · Built with [Tatum](https://tatum.io) and [Walrus Memory](https://memory.walrus.xyz). #TotalRecall @Tatum_io @WalrusProtocol

@@ -1,5 +1,7 @@
 # 🐕 Sui Wallet Watchdog
 
+**Live demo:** https://sui-wallet-watchdog.netlify.app · Built for the Tatum x Walrus Total Recall hackathon (track: Smart Agents for Real Life).
+
 **An AI agent that watches a Sui wallet, flags unusual activity, and *remembers your answers* on Walrus Memory, so it stops raising the same false alarms.**
 
 Built for **Total Recall · Tatum × Walrus Memory Hackathon** (track: *Smart Agents for Real Life*).
